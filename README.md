@@ -320,5 +320,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] Create a dummy database in PostgreSQL
 - [ ] Test the functionality of the tables
 - [ ] Make improvements to the database
+- [ ] Add editorial to .csv
 - [ ] Evaluate and add optional tables based on LMS scope (e.g., Reservation for holds, Fine for penalties, Category for genres)
 - [ ] Plan extensions for specific features (e.g., overdue notifications, reporting)
