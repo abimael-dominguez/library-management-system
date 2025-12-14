@@ -14,6 +14,10 @@ A scalable backend for library operations, built with Django and Django REST Fra
 - [Architecture](#architecture)
 - [Database Schema Definition](#database-schema-definition)
 - [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Setup](#setup)
+  - [Database Setup with PostgreSQL](#database-setup-with-postgresql)
 - [Development](#development)
 - [API Documentation](#api-documentation)
 - [Contributing](#contributing)
@@ -172,7 +176,127 @@ Records every instance of a book copy being loaned out.
 
 4. Create Django REST Framework Serializers for data interaction.
 
-## Development
+## Database Setup with PostgreSQL
+
+Before developing in Django, set up and test PostgreSQL.
+
+### Install PostgreSQL on Ubuntu 24 LTS
+
+1. Check if PostgreSQL is already installed:
+   ```bash
+   psql --version
+   ```
+   - Checks the version of PostgreSQL if installed; if not, it will indicate it's not found.
+
+2. Update your package list:
+   ```bash
+   sudo apt update
+   ```
+   - Updates the package list to ensure you have the latest information about available packages.
+
+3. Install PostgreSQL and contrib package:
+   ```bash
+   sudo apt install postgresql postgresql-contrib
+   ```
+   - Installs PostgreSQL server and additional contributed packages (e.g., for extensions).
+
+4. Start and enable PostgreSQL service:
+   ```bash
+   sudo systemctl start postgresql
+   sudo systemctl enable postgresql
+   ```
+   - Starts the PostgreSQL service immediately.
+   - Enables PostgreSQL to start automatically on boot.
+
+5. Verify installation:
+   ```bash
+   sudo systemctl status postgresql
+   ```
+   - Checks the status of the PostgreSQL service to confirm it's running.
+
+### Create Database and User
+
+1. Switch to postgres user:
+   ```bash
+   sudo -u postgres psql
+   ```
+   - Switches to the 'postgres' system user and opens the PostgreSQL interactive terminal (psql).
+
+2. Create a database and user (replace 'your_password' with a secure password):
+   ```sql
+   CREATE DATABASE library_management;
+   CREATE USER library_user WITH PASSWORD 'your_password';
+   GRANT ALL PRIVILEGES ON DATABASE library_management TO library_user;
+   \q
+   ```
+   - Creates a new database named 'library_management'.
+   - Creates a new database user with a password.
+   - Grants full access to the database for the user.
+   - Exits the psql terminal.
+
+### Run the Table Creation Script
+
+1. Use the provided `create_tables.sql` file to create tables:
+   ```bash
+   psql -U library_user -d library_management -f create_tables.sql
+   ```
+   - Connects to the database as 'library_user' and executes the SQL commands from the file.
+     - `-U`: Specifies the username.
+     - `-d`: Specifies the database name.
+     - `-f`: Reads and executes commands from the specified file.
+
+   Enter the password when prompted.
+
+### Test Database Functionality
+
+1. Connect to the database:
+   ```bash
+   psql -U library_user -d library_management
+   ```
+   - Opens psql connected to the database as the specified user.
+
+2. Run basic tests:
+   - List tables: `\dt`
+     - Lists all tables in the current database.
+   - Insert sample data (based on library-cbg-clean.csv reference):
+     ```sql
+     -- Insert a book
+     INSERT INTO book (title, author, isbn, publisher, publication_year, genre) 
+     VALUES ('El Progreso Del Peregrino', 'John Bunyan', '1234567890123', 'Publisher', 1678, 'Religious');
+
+     -- Insert a member
+     INSERT INTO member (first_name, last_name, email, status) 
+     VALUES ('John', 'Doe', 'john.doe@example.com', 'active');
+
+     -- Insert a book copy
+     INSERT INTO book_copy (book_id, status) VALUES (1, 'available');
+
+     -- Insert a loan
+     INSERT INTO loan (book_copy_id, member_id, due_date, status) 
+     VALUES (1, 1, '2025-12-21', 'in_progress');
+     ```
+   - Query data:
+     ```sql
+     SELECT * FROM book;
+     SELECT * FROM loan WHERE status = 'in_progress';
+     ```
+
+3. Exit: `\q`
+   - Quits the psql terminal.
+
+### Using DBeaver for GUI Management
+
+1. Install DBeaver: Download from [dbeaver.io](https://dbeaver.io/) and install.
+
+2. Create a new connection:
+   - Host: localhost
+   - Database: library_management
+   - Username: library_user
+   - Password: your_password
+
+3. Explore tables, run queries, and manage relationships visually.
+
+This setup allows you to test the database independently before integrating with Django.
 
 - Run the development server: `python manage.py runserver`
 - Run tests: `python manage.py test`
