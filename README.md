@@ -188,31 +188,16 @@ Before developing in Django, set up and test PostgreSQL.
    ```
    - Checks the version of PostgreSQL if installed; if not, it will indicate it's not found.
 
-2. Update your package list:
-   ```bash
-   sudo apt update
-   ```
-   - Updates the package list to ensure you have the latest information about available packages.
 
-3. Install PostgreSQL and contrib package:
-   ```bash
-   sudo apt install postgresql postgresql-contrib
-   ```
-   - Installs PostgreSQL server and additional contributed packages (e.g., for extensions).
+If there is no PostgreSQL installed, install it like this (TL;DR):
 
-4. Start and enable PostgreSQL service:
-   ```bash
-   sudo systemctl start postgresql
-   sudo systemctl enable postgresql
-   ```
-   - Starts the PostgreSQL service immediately.
-   - Enables PostgreSQL to start automatically on boot.
+```bash
+sudo apt install -y postgresql-common ca-certificates
+sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+sudo apt install postgresql-16
+```
 
-5. Verify installation:
-   ```bash
-   sudo systemctl status postgresql
-   ```
-   - Checks the status of the PostgreSQL service to confirm it's running.
+Based on: [PostgreSQL Apt Wiki](https://wiki.postgresql.org/wiki/Apt) and [Ubuntu Download Guide](https://www.postgresql.org/download/linux/ubuntu/).
 
 ### Create Database and User
 
