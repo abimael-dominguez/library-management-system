@@ -111,7 +111,7 @@ class BookCopy(BaseModel):
     
     id: str = Field(description="Unique copy identifier")
     book_id: str = Field(description="Reference to parent book")
-    status: str = Field(regex='^(available|loaned|damaged|lost)$', description="Copy status")
+    status: str = Field(pattern='^(available|loaned|damaged|lost)$', description="Copy status")
     created_at: Optional[datetime] = Field(None, description="Creation timestamp")
     updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
     

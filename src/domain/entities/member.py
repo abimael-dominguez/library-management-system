@@ -15,7 +15,7 @@ class Member(BaseModel):
     email: EmailStr = Field(description="Member email address")
     phone: Optional[str] = Field(None, max_length=20, description="Phone number")
     address: Optional[str] = Field(None, max_length=255, description="Mailing address")
-    status: str = Field(default='active', regex='^(active|inactive|suspended)$', description="Member status")
+    status: str = Field(default='active', pattern='^(active|inactive|suspended)$', description="Member status")
     registration_date: date = Field(default_factory=date.today, description="Registration date")
     created_at: Optional[datetime] = Field(None, description="Creation timestamp")
     updated_at: Optional[datetime] = Field(None, description="Last update timestamp")

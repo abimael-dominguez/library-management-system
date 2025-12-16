@@ -30,8 +30,6 @@ services:
       - "8080:80"
     volumes:
       - "./frontend:/usr/share/nginx/html:ro"
-    depends_on:
-      - sam-local
     networks:
       - lms_network
 
