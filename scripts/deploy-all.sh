@@ -40,7 +40,7 @@ read -p "Presiona Enter cuando hayas actualizado el archivo..."
 ./scripts/deploy-step6-frontend.sh
 echo ""
 
-ACCOUNT_ID=$(aws sts get-caller-identity --profile $PROFILE --query Account --output text)
+ACCOUNT_ID=$(aws sts get-caller-identity --profile $PROFILE --region $REGION --query Account --output text)
 BUCKET_NAME="lms-static-$ACCOUNT_ID-$REGION"
 
 echo "✅ ¡Despliegue completo!"

@@ -3,7 +3,7 @@ set -e
 
 PROFILE="immersion"
 REGION="us-east-1"
-ACCOUNT_ID=$(aws sts get-caller-identity --profile $PROFILE --query Account --output text)
+ACCOUNT_ID=$(aws sts get-caller-identity --profile $PROFILE --region $REGION --query Account --output text)
 BUCKET_NAME="lms-static-$ACCOUNT_ID-$REGION"
 
 echo "🪣 Paso 2: Creando S3 bucket..."

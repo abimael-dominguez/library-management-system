@@ -9,7 +9,7 @@ FUNCTION_NAME="lms-books-dev"
 echo "🌐 Paso 4: Creando API Gateway..."
 
 # Obtener ARN de la función Lambda
-ACCOUNT_ID=$(aws sts get-caller-identity --profile $PROFILE --query Account --output text)
+ACCOUNT_ID=$(aws sts get-caller-identity --profile $PROFILE --region $REGION --query Account --output text)
 LAMBDA_ARN="arn:aws:lambda:$REGION:$ACCOUNT_ID:function:$FUNCTION_NAME"
 
 # Crear API Gateway

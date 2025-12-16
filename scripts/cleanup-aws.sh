@@ -16,7 +16,7 @@ then
     exit 1
 fi
 
-ACCOUNT_ID=$(aws sts get-caller-identity --profile $PROFILE --query Account --output text)
+ACCOUNT_ID=$(aws sts get-caller-identity --profile $PROFILE --region $REGION --query Account --output text)
 
 # 1. Eliminar API Gateway (primero para desvincular Lambda)
 echo "🗑️  Eliminando API Gateway..."
@@ -62,10 +62,12 @@ fi
 # 4. Vaciar y eliminar bucket S3
 echo "🗑️  Vaciando y eliminando bucket S3..."
 BUCKET_NAME="lms-static-$ACCOUNT_ID-$REGION"
-if aws s3 ls s3://$BUCKET_NAME --profile $PROFILE &>/dev/null; then
-    aws s3 rm s3://$BUCKET_NAME --recursive --profile $PROFILE
+if aws s3api head-bucket --profile $PROFILE --bucket $BUCKET_NAME --region $REGION 2>/dev/null; then
+    echo "  Vaciando bucket..."
+    aws s3 rm s3://$BUCKET_NAME --recursive --profile $PROFILE --region $REGION 2>/dev/null || true
     echo "  ✓ Bucket vaciado"
-    aws s3 rb s3://$BUCKET_NAME --profile $PROFILE
+    echo "  Eliminando bucket..."
+    aws s3 rb s3://$BUCKET_NAME --profile $PROFILE --region $REGION 2>/dev/null || true
     echo "  ✓ Bucket eliminado"
 else
     echo "  - Bucket no existe"

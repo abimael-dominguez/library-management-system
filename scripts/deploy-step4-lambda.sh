@@ -49,7 +49,7 @@ zip -r ../lambda-function.zip . -x "**/__pycache__/*" "**/*.pyc"
 cd ..
 
 # Obtener ARN del rol
-ACCOUNT_ID=$(aws sts get-caller-identity --profile $PROFILE --query Account --output text)
+ACCOUNT_ID=$(aws sts get-caller-identity --profile $PROFILE --region $REGION --query Account --output text)
 ROLE_ARN="arn:aws:iam::$ACCOUNT_ID:role/$ROLE_NAME"
 
 # Crear función Lambda
