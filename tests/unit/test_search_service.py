@@ -20,13 +20,13 @@ class TestSearchService:
         # Mock data
         mock_books = [
             Book(
-                book_id="book_1",
+                id="book_1",
                 title="Python Programming",
                 author="John Doe",
                 isbn="978-0123456789"
             ),
             Book(
-                book_id="book_2", 
+                id="book_2", 
                 title="Advanced Python",
                 author="Jane Smith",
                 isbn="978-0987654321"
@@ -49,7 +49,7 @@ class TestSearchService:
         # Mock data
         mock_members = [
             Member(
-                member_id="member_1",
+                id="member_1",
                 first_name="John",
                 last_name="Doe",
                 email="john@example.com"
@@ -71,7 +71,7 @@ class TestSearchService:
         # Mock data
         mock_books = [
             Book(
-                book_id="book_1",
+                id="book_1",
                 title="Harry Potter",
                 author="J.K. Rowling",
                 isbn="978-0123456789"
@@ -94,7 +94,7 @@ class TestSearchService:
         # Mock data
         mock_members = [
             Member(
-                member_id="member_1",
+                id="member_1",
                 first_name="Maria",
                 last_name="Garcia",
                 email="maria@example.com"

@@ -16,6 +16,28 @@ class SearchService:
     def __init__(self, search_repository: DynamoSearchRepository):
         self.search_repository = search_repository
     
+    def search_books(self, query: str, limit: int = 10) -> List:
+        """Synchronous book search for testing"""
+        if not query or len(query.strip()) < 2:
+            return []
+        
+        try:
+            return self.search_repository.search_books(query.strip(), limit)
+        except Exception as e:
+            print(f"Error in search_books: {str(e)}")
+            return []
+    
+    def search_members(self, query: str, limit: int = 10) -> List:
+        """Synchronous member search for testing"""
+        if not query or len(query.strip()) < 2:
+            return []
+        
+        try:
+            return self.search_repository.search_members(query.strip(), limit)
+        except Exception as e:
+            print(f"Error in search_members: {str(e)}")
+            return []
+    
     async def autocomplete(self, request: AutocompleteRequest) -> AutocompleteResponse:
         """Ultra-fast autocomplete with performance monitoring"""
         start_time = time.time()

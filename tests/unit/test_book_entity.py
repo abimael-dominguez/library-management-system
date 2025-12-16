@@ -11,7 +11,7 @@ class TestBookEntity:
     def test_book_creation(self):
         """Test basic book creation"""
         book = Book(
-            book_id="book_123",
+            id="book_123",
             title="Test Book",
             author="Test Author",
             isbn="978-0123456789",
@@ -20,7 +20,7 @@ class TestBookEntity:
             genre="Fiction"
         )
         
-        assert book.book_id == "book_123"
+        assert book.id == "book_123"
         assert book.title == "Test Book"
         assert book.author == "Test Author"
         assert book.isbn == "978-0123456789"
@@ -29,7 +29,7 @@ class TestBookEntity:
     def test_book_to_dict(self):
         """Test book serialization to dictionary"""
         book = Book(
-            book_id="book_123",
+            id="book_123",
             title="Test Book",
             author="Test Author",
             isbn="978-0123456789"
@@ -37,7 +37,7 @@ class TestBookEntity:
         
         book_dict = book.to_dict()
         
-        assert book_dict["book_id"] == "book_123"
+        assert book_dict["id"] == "book_123"
         assert book_dict["title"] == "Test Book"
         assert book_dict["author"] == "Test Author"
         assert book_dict["isbn"] == "978-0123456789"
@@ -46,7 +46,7 @@ class TestBookEntity:
     def test_book_to_dynamodb_item(self):
         """Test book serialization to DynamoDB format"""
         book = Book(
-            book_id="book_123",
+            id="book_123",
             title="Test Book",
             author="Test Author",
             isbn="978-0123456789"
@@ -78,7 +78,7 @@ class TestBookEntity:
         
         book = Book.from_dynamodb_item(item)
         
-        assert book.book_id == "book_123"
+        assert book.id == "book_123"
         assert book.title == "Test Book"
         assert book.author == "Test Author"
         assert book.isbn == "978-0123456789"
@@ -87,7 +87,7 @@ class TestBookEntity:
     def test_book_search_text_generation(self):
         """Test search text generation for GSI"""
         book = Book(
-            book_id="book_123",
+            id="book_123",
             title="The Great Gatsby",
             author="F. Scott Fitzgerald",
             isbn="978-0123456789",
