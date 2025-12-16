@@ -8,16 +8,20 @@ echo ""
 ./scripts/deploy-step1-dynamodb.sh
 echo ""
 
-# Paso 2: S3
-./scripts/deploy-step2-s3.sh
+# Paso 2: Seed Data
+./scripts/deploy-step2-seed.sh
 echo ""
 
-# Paso 3: Lambda
-./scripts/deploy-step3-lambda.sh
+# Paso 3: S3
+./scripts/deploy-step3-s3.sh
 echo ""
 
-# Paso 4: API Gateway
-./scripts/deploy-step4-api.sh
+# Paso 4: Lambda
+./scripts/deploy-step4-lambda.sh
+echo ""
+
+# Paso 5: API Gateway
+./scripts/deploy-step5-api.sh
 echo ""
 
 # Obtener API URL para actualizar frontend
@@ -32,8 +36,8 @@ echo "   Cambia a: $API_URL"
 echo ""
 read -p "Presiona Enter cuando hayas actualizado el archivo..."
 
-# Paso 5: Frontend
-./scripts/deploy-step5-frontend.sh
+# Paso 6: Frontend
+./scripts/deploy-step6-frontend.sh
 echo ""
 
 ACCOUNT_ID=$(aws sts get-caller-identity --profile $PROFILE --query Account --output text)
