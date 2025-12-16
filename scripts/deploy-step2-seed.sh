@@ -1,32 +1,55 @@
 #!/bin/bash
 set -e
 
-echo "📊 Paso 6: Cargando datos a DynamoDB..."
+PROFILE="immersion"
+REGION="us-east-1"
+VENV_DIR=".transfer_data_env"
 
-# Verificar si Docker está corriendo
-if ! docker info > /dev/null 2>&1; then
-    echo "❌ Error: Docker no está corriendo"
+echo "📊 Paso 2: Cargando datos a DynamoDB..."
+
+# Verificar si ya hay datos
+ITEM_COUNT=$(aws dynamodb scan --profile $PROFILE --region $REGION --table-name lms-table-dev --select COUNT --query 'Count' --output text 2>/dev/null || echo "0")
+if [ "$ITEM_COUNT" -gt "0" ]; then
+    echo "⏭️  La tabla ya tiene $ITEM_COUNT items, saltando..."
+    exit 0
+fi
+
+# Verificar que la tabla existe
+if ! aws dynamodb describe-table --profile $PROFILE --region $REGION --table-name lms-table-dev &>/dev/null; then
+    echo "❌ Error: La tabla lms-table-dev no existe"
     exit 1
 fi
 
-# Iniciar contenedor si no está corriendo
-if ! docker ps | grep -q lms-seed; then
-    echo "🐳 Iniciando contenedor Docker..."
-    docker-compose up -d
-    sleep 3
-fi
+# Crear venv temporal
+echo "🐍 Creando virtual environment temporal..."
+python3 -m venv $VENV_DIR
+echo "📦 Instalando dependencias..."
+$VENV_DIR/bin/pip install -q --upgrade pip
+$VENV_DIR/bin/pip install -q boto3
 
 # Ejecutar seed
 echo "📥 Cargando datos..."
-docker exec -it lms-seed python /app/seed_dynamodb.py
+if [ -f "scripts/seed-data.py" ]; then
+    $VENV_DIR/bin/python scripts/seed-data.py
+else
+    rm -rf $VENV_DIR
+    echo "❌ Error: scripts/seed-data.py no encontrado"
+    exit 1
+fi
+
+# Limpiar venv temporal
+echo "🧹 Limpiando environment temporal..."
+rm -rf $VENV_DIR
 
 echo "✅ Datos cargados exitosamente"
 echo ""
 echo "🧪 Verificando datos..."
 echo "Conteo de items por tipo:"
-aws dynamodb scan --profile immersion --table-name lms-table-dev --filter-expression "entity_type = :t" --expression-attribute-values '{":t":{"S":"book"}}' --select COUNT --query 'Count' --output text | xargs -I {} echo "  - Libros: {}"
-aws dynamodb scan --profile immersion --table-name lms-table-dev --filter-expression "entity_type = :t" --expression-attribute-values '{":t":{"S":"member"}}' --select COUNT --query 'Count' --output text | xargs -I {} echo "  - Miembros: {}"
+BOOK_COUNT=$(aws dynamodb scan --profile $PROFILE --region $REGION --table-name lms-table-dev --filter-expression "entity_type = :t" --expression-attribute-values '{":t":{"S":"book"}}' --select COUNT --query 'Count' --output text)
+MEMBER_COUNT=$(aws dynamodb scan --profile $PROFILE --region $REGION --table-name lms-table-dev --filter-expression "entity_type = :t" --expression-attribute-values '{":t":{"S":"member"}}' --select COUNT --query 'Count' --output text)
+echo "  - Libros: $BOOK_COUNT"
+echo "  - Miembros: $MEMBER_COUNT"
 echo ""
 echo "Primeros 5 libros:"
-aws dynamodb scan --profile immersion --table-name lms-table-dev --filter-expression "entity_type = :t" --expression-attribute-values '{":t":{"S":"book"}}' --limit 5 --query 'Items[*].[title.S,author.S]' --output table
+aws dynamodb scan --profile $PROFILE --region $REGION --table-name lms-table-dev --filter-expression "entity_type = :t" --expression-attribute-values '{":t":{"S":"book"}}' --limit 5 --query 'Items[*].[title.S,author.S]' --output table
 echo "✅ Verificación exitosa"

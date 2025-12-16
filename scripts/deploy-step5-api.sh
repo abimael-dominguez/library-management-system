@@ -6,7 +6,14 @@ REGION="us-east-1"
 API_NAME="lms-api-dev"
 FUNCTION_NAME="lms-books-dev"
 
-echo "🌐 Paso 4: Creando API Gateway..."
+echo "🌐 Paso 5: Creando API Gateway..."
+
+# Verificar si el API ya existe
+EXISTING_API=$(aws apigateway get-rest-apis --profile $PROFILE --region $REGION --query 'items[?name==`lms-api-dev`].id' --output text)
+if [ ! -z "$EXISTING_API" ] && [ "$EXISTING_API" != "None" ]; then
+    echo "⏭️  API Gateway lms-api-dev ya existe (ID: $EXISTING_API), saltando..."
+    exit 0
+fi
 
 # Obtener ARN de la función Lambda
 ACCOUNT_ID=$(aws sts get-caller-identity --profile $PROFILE --region $REGION --query Account --output text)

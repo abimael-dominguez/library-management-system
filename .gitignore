@@ -222,3 +222,6 @@ test-event.json
 # AWS SAM
 samconfig.toml
 .aws-sam/
+
+# Temporary seed environment
+.transfer_data_env/

@@ -6,7 +6,7 @@ import csv
 import json
 import uuid
 import boto3
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 import os
 import sys
 
@@ -130,8 +130,8 @@ def seed_dynamodb_table(table_name, books, members, employees, loans):
             'pages': book['pages'],
             'max_loan_weeks': book['max_loan_weeks'],
             'total_copies': book['total_copies'],
-            'created_at': datetime.utcnow().isoformat(),
-            'updated_at': datetime.utcnow().isoformat()
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'updated_at': datetime.now(timezone.utc).isoformat()
         }
         
         # Remove None values
@@ -148,8 +148,8 @@ def seed_dynamodb_table(table_name, books, members, employees, loans):
                 'book_copy_id': copy_id,
                 'book_id': book['book_id'],
                 'status': BookStatus.AVAILABLE.value,
-                'created_at': datetime.utcnow().isoformat(),
-                'updated_at': datetime.utcnow().isoformat()
+                'created_at': datetime.now(timezone.utc).isoformat(),
+                'updated_at': datetime.now(timezone.utc).isoformat()
             }
             table.put_item(Item=copy_item)
     
@@ -168,8 +168,8 @@ def seed_dynamodb_table(table_name, books, members, employees, loans):
             'email': member['email'],
             'status': member['status'],
             'registration_date': date.today().isoformat(),
-            'created_at': datetime.utcnow().isoformat(),
-            'updated_at': datetime.utcnow().isoformat()
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'updated_at': datetime.now(timezone.utc).isoformat()
         }
         table.put_item(Item=item)
     
@@ -184,8 +184,8 @@ def seed_dynamodb_table(table_name, books, members, employees, loans):
             'first_name': employee['first_name'],
             'last_name': employee['last_name'],
             'position': employee['position'],
-            'created_at': datetime.utcnow().isoformat(),
-            'updated_at': datetime.utcnow().isoformat()
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'updated_at': datetime.now(timezone.utc).isoformat()
         }
         table.put_item(Item=item)
     
@@ -205,8 +205,8 @@ def seed_dynamodb_table(table_name, books, members, employees, loans):
             'loan_date': loan['loan_date'],
             'due_date': loan['due_date'],
             'status': loan['status'],
-            'created_at': datetime.utcnow().isoformat(),
-            'updated_at': datetime.utcnow().isoformat()
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'updated_at': datetime.now(timezone.utc).isoformat()
         }
         
         # Remove None values

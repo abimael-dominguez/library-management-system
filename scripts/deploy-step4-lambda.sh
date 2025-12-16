@@ -5,7 +5,13 @@ PROFILE="immersion"
 REGION="us-east-1"
 FUNCTION_NAME="lms-books-dev"
 
-echo "⚡ Paso 3: Creando Lambda function..."
+echo "⚡ Paso 4: Creando Lambda function..."
+
+# Verificar si la función ya existe
+if aws lambda get-function --profile $PROFILE --region $REGION --function-name $FUNCTION_NAME &>/dev/null; then
+    echo "⏭️  Función $FUNCTION_NAME ya existe, saltando..."
+    exit 0
+fi
 
 # Crear rol IAM para Lambda
 ROLE_NAME="lms-lambda-role"
@@ -26,7 +32,8 @@ echo "📋 Creando rol IAM..."
 aws iam create-role \
     --profile $PROFILE \
     --role-name $ROLE_NAME \
-    --assume-role-policy-document "$TRUST_POLICY" || echo "Rol ya existe"
+    --assume-role-policy-document "$TRUST_POLICY" \
+    --no-cli-pager > /dev/null 2>&1 || echo "Rol ya existe"
 
 # Adjuntar políticas
 aws iam attach-role-policy \
@@ -62,7 +69,8 @@ aws lambda create-function \
     --handler application.lambda_handlers.books_handler_cors.lambda_handler \
     --zip-file fileb://lambda-function.zip \
     --environment Variables="{DYNAMODB_TABLE=lms-table-dev,ENVIRONMENT=dev}" \
-    --timeout 30
+    --timeout 30 \
+    --no-cli-pager > /dev/null
 
 echo "✅ Lambda function creada: $FUNCTION_NAME"
 echo ""
@@ -70,7 +78,12 @@ echo "🧪 Verificando Lambda..."
 aws lambda get-function --profile $PROFILE --region $REGION --function-name $FUNCTION_NAME --query 'Configuration.[FunctionName,Runtime,State]' --output table
 echo ""
 echo "Probando invocación..."
-aws lambda invoke --profile $PROFILE --region $REGION --function-name $FUNCTION_NAME --payload '{"httpMethod":"GET","path":"/books","queryStringParameters":{"limit":"3"}}' /tmp/lambda-test.json --query 'StatusCode' --output text | xargs -I {} echo "Status: {}"
-cat /tmp/lambda-test.json | jq -r '.body' | jq '.books | length' | xargs -I {} echo "Libros devueltos: {}"
-rm -f /tmp/lambda-test.json
+echo '{"httpMethod":"GET","path":"/books","queryStringParameters":{"limit":"3"}}' > /tmp/lambda-payload.json
+STATUS=$(aws lambda invoke --profile $PROFILE --region $REGION --function-name $FUNCTION_NAME --payload file:///tmp/lambda-payload.json /tmp/lambda-test.json --query 'StatusCode' --output text)
+echo "Status: $STATUS"
+if [ -f /tmp/lambda-test.json ]; then
+    BOOK_COUNT=$(cat /tmp/lambda-test.json | jq -r '.body' | jq '.books | length' 2>/dev/null || echo "0")
+    echo "Libros devueltos: $BOOK_COUNT"
+fi
+rm -f /tmp/lambda-test.json /tmp/lambda-payload.json
 echo "✅ Verificación exitosa"
