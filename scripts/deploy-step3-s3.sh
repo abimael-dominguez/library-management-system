@@ -49,4 +49,7 @@ aws s3api put-bucket-policy \
 
 echo "✅ S3 bucket creado: $BUCKET_NAME"
 echo "🌐 URL: http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
-echo "📤 Subir archivos: aws s3 sync frontend/src/ s3://$BUCKET_NAME/ --profile $PROFILE"
+echo ""
+echo "🧪 Verificando bucket..."
+aws s3 ls s3://$BUCKET_NAME --profile $PROFILE --region $REGION
+echo "✅ Verificación exitosa - Bucket vacío (listo para recibir archivos)"

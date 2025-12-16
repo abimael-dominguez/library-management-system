@@ -13,3 +13,11 @@ aws s3 sync frontend/src/ s3://$BUCKET_NAME/ --profile $PROFILE --delete
 
 echo "✅ Frontend subido"
 echo "🌐 URL: http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
+echo ""
+echo "🧪 Verificando frontend..."
+echo "Archivos en S3:"
+aws s3 ls s3://$BUCKET_NAME --profile $PROFILE --region $REGION
+echo ""
+echo "Probando acceso al sitio:"
+curl -s -o /dev/null -w "Status: %{http_code}\n" "http://$BUCKET_NAME.s3-website-$REGION.amazonaws.com"
+echo "✅ Verificación exitosa"

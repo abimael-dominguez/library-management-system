@@ -24,4 +24,7 @@ aws dynamodb create-table \
     --billing-mode PAY_PER_REQUEST
 
 echo "✅ DynamoDB creado: $TABLE_NAME"
-echo "🔍 Verificar: aws dynamodb describe-table --profile $PROFILE --region $REGION --table-name $TABLE_NAME"
+echo ""
+echo "🧪 Verificando instalación..."
+aws dynamodb describe-table --profile $PROFILE --region $REGION --table-name $TABLE_NAME --query 'Table.[TableName,TableStatus,ItemCount]' --output table
+echo "✅ Verificación exitosa"

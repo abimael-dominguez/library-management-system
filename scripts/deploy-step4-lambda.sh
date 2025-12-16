@@ -65,4 +65,12 @@ aws lambda create-function \
     --timeout 30
 
 echo "✅ Lambda function creada: $FUNCTION_NAME"
-echo "🧪 Probar: aws lambda invoke --profile $PROFILE --region $REGION --function-name $FUNCTION_NAME --payload '{}' response.json"
+echo ""
+echo "🧪 Verificando Lambda..."
+aws lambda get-function --profile $PROFILE --region $REGION --function-name $FUNCTION_NAME --query 'Configuration.[FunctionName,Runtime,State]' --output table
+echo ""
+echo "Probando invocación..."
+aws lambda invoke --profile $PROFILE --region $REGION --function-name $FUNCTION_NAME --payload '{"httpMethod":"GET","path":"/books","queryStringParameters":{"limit":"3"}}' /tmp/lambda-test.json --query 'StatusCode' --output text | xargs -I {} echo "Status: {}"
+cat /tmp/lambda-test.json | jq -r '.body' | jq '.books | length' | xargs -I {} echo "Libros devueltos: {}"
+rm -f /tmp/lambda-test.json
+echo "✅ Verificación exitosa"

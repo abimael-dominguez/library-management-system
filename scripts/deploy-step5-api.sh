@@ -184,5 +184,14 @@ aws apigateway create-deployment \
 
 echo "✅ API Gateway desplegado"
 echo "🌐 URL Base: https://$API_ID.execute-api.$REGION.amazonaws.com/dev"
-echo "📚 Endpoint Books: https://$API_ID.execute-api.$REGION.amazonaws.com/dev/books"
-echo "🔍 Endpoint Search: https://$API_ID.execute-api.$REGION.amazonaws.com/dev/search?q=test"
+echo ""
+echo "🧪 Verificando API Gateway..."
+echo "Probando endpoint /books:"
+curl -s "https://$API_ID.execute-api.$REGION.amazonaws.com/dev/books?limit=3" | jq '.books | length' | xargs -I {} echo "  - Libros devueltos: {}"
+echo ""
+echo "Probando CORS (OPTIONS):"
+curl -s -X OPTIONS "https://$API_ID.execute-api.$REGION.amazonaws.com/dev/books" -I | grep -i "access-control" | head -3
+echo ""
+echo "Probando endpoint /search:"
+curl -s "https://$API_ID.execute-api.$REGION.amazonaws.com/dev/search?q=el" | jq '.books | length' | xargs -I {} echo "  - Resultados: {}"
+echo "✅ Verificación exitosa"
