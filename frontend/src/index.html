@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Digital Library Management</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="styles.css" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
@@ -18,22 +18,15 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-brand">
-                <i class="fas fa-book-open"></i>
-                <span class="nav-title">Digital Library</span>
+                <div class="brand-icon">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <div class="brand-text">
+                    <span class="nav-title">Digital Library</span>
+                    <span class="nav-subtitle">Smart circulation</span>
+                </div>
             </div>
             <div class="nav-actions">
-                <button class="btn btn-primary mobile-add" onclick="showAddBookModal()">
-                    <i class="fas fa-plus"></i>
-                </button>
-                <button class="btn btn-secondary mobile-only" onclick="showCreateLoanModal()">
-                    <i class="fas fa-hand-holding"></i>
-                </button>
-                <button class="btn btn-success mobile-only" onclick="showReturnBookModal()">
-                    <i class="fas fa-undo"></i>
-                </button>
-                <button class="btn-icon" onclick="toggleTheme()">
-                    <i class="fas fa-moon" id="themeIcon"></i>
-                </button>
                 <button class="btn-icon mobile-menu" onclick="toggleMobileMenu()">
                     <i class="fas fa-bars"></i>
                 </button>
@@ -41,11 +34,97 @@
         </div>
     </nav>
 
+    <!-- Mobile Drawer -->
+    <div id="mobileMenuOverlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
+    <aside id="mobileMenu" class="mobile-drawer">
+        <div class="drawer-header">
+            <div class="drawer-brand">
+                <div class="brand-icon"><i class="fas fa-book-open"></i></div>
+                <div class="brand-text">
+                    <span class="nav-title">Digital Library</span>
+                    <span class="nav-subtitle">Acciones rápidas</span>
+                </div>
+            </div>
+            <button class="btn-icon" aria-label="Cerrar menú" onclick="closeMobileMenu()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="drawer-actions">
+            <button class="drawer-item" onclick="showAddBookModal(); closeMobileMenu();">
+                <i class="fas fa-plus"></i>
+                <div>
+                    <p>Agregar libro</p>
+                    <small>Crear un título nuevo</small>
+                </div>
+            </button>
+            <button class="drawer-item" onclick="showCreateLoanModal(); closeMobileMenu();">
+                <i class="fas fa-hand-holding"></i>
+                <div>
+                    <p>Nuevo préstamo</p>
+                    <small>Entrega inmediata</small>
+                </div>
+            </button>
+            <button class="drawer-item" onclick="showReturnBookModal(); closeMobileMenu();">
+                <i class="fas fa-undo"></i>
+                <div>
+                    <p>Devolver libro</p>
+                    <small>Registrar retorno</small>
+                </div>
+            </button>
+            <button class="drawer-item" onclick="loadBooks(); closeMobileMenu();">
+                <i class="fas fa-sync-alt"></i>
+                <div>
+                    <p>Refrescar catálogo</p>
+                    <small>Sincronizar ahora</small>
+                </div>
+            </button>
+            <button class="drawer-item" onclick="toggleTheme();">
+                <i class="fas fa-moon"></i>
+                <div>
+                    <p>Tema</p>
+                    <small>Claro / Oscuro</small>
+                </div>
+            </button>
+            <div class="palette-block">
+                <div class="palette-header">
+                    <span>Paletas</span>
+                    <small>Profesional / cutting-edge</small>
+                </div>
+                <div class="palette-grid">
+                    <button class="palette-chip" onclick="applyPalette('indigo')" aria-label="Indigo">
+                        <span style="background:#0f172a"></span>
+                        <span style="background:#3f51b5"></span>
+                        <span style="background:#303f9f"></span>
+                        <span style="background:#e3e7ef"></span>
+                    </button>
+                    <button class="palette-chip" onclick="applyPalette('teal')" aria-label="Teal">
+                        <span style="background:#0f172a"></span>
+                        <span style="background:#009688"></span>
+                        <span style="background:#00796b"></span>
+                        <span style="background:#d7e2dd"></span>
+                    </button>
+                    <button class="palette-chip" onclick="applyPalette('amber')" aria-label="Amber">
+                        <span style="background:#111827"></span>
+                        <span style="background:#ffb300"></span>
+                        <span style="background:#f59e00"></span>
+                        <span style="background:#f0e6d7"></span>
+                    </button>
+                    <button class="palette-chip" onclick="applyPalette('slate')" aria-label="Slate">
+                        <span style="background:#0f172a"></span>
+                        <span style="background:#546e7a"></span>
+                        <span style="background:#37474f"></span>
+                        <span style="background:#e4e8ee"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-content">
-            <h1>Manage Your Library</h1>
-            <p>Streamlined book management with modern tools</p>
+            <h1>Gestiona tu biblioteca sin fricción</h1>
+            <p>Préstamos, devoluciones y catálogo en una interfaz pulida, lista para móvil</p>
             <div class="hero-actions desktop-only">
                 <button class="btn btn-primary" onclick="showAddBookModal()">
                     <i class="fas fa-plus"></i> Add Book
@@ -65,12 +144,14 @@
         <div class="container">
             <div class="search-card">
                 <div class="search-header">
-                    <i class="fas fa-search"></i>
-                    <h2>Find Books</h2>
+                    <div class="search-badge"><i class="fas fa-bolt"></i> Búsqueda rápida</div>
+                    <h2>Encuentra libros</h2>
+                    <p class="search-subtitle">Filtra por título, autor o ISBN en segundos</p>
                 </div>
                 <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
                     <input type="text" class="search-input" id="searchInput" 
-                           placeholder="Search by title, author, or ISBN..." 
+                           placeholder="Buscar por título, autor o ISBN" 
                            onkeyup="searchBooks(this.value)">
                     <div id="searchResults" class="search-results"></div>
                 </div>
@@ -83,30 +164,33 @@
         <div class="container">
             <div class="stats-grid">
                 <div class="stat-card" onclick="filterBooks('all')">
-                    <div class="stat-icon">
+                    <div class="stat-icon soft-primary">
                         <i class="fas fa-books"></i>
                     </div>
                     <div class="stat-content">
+                        <p class="stat-label">Catálogo</p>
                         <h3 id="totalBooks">0</h3>
-                        <p>Total Books</p>
+                        <small>Total de libros</small>
                     </div>
                 </div>
                 <div class="stat-card" onclick="showReturnBookModal()">
-                    <div class="stat-icon">
+                    <div class="stat-icon soft-accent">
                         <i class="fas fa-book-reader"></i>
                     </div>
                     <div class="stat-content">
+                        <p class="stat-label">Préstamos</p>
                         <h3 id="activeLoans">0</h3>
-                        <p>Active Loans</p>
+                        <small>Activos</small>
                     </div>
                 </div>
                 <div class="stat-card" onclick="showToast('Members feature coming soon!', 'info')">
-                    <div class="stat-icon">
+                    <div class="stat-icon soft-neutral">
                         <i class="fas fa-users"></i>
                     </div>
                     <div class="stat-content">
+                        <p class="stat-label">Miembros</p>
                         <h3 id="totalMembers">0</h3>
-                        <p>Members</p>
+                        <small>Registrados</small>
                     </div>
                 </div>
             </div>
@@ -117,12 +201,15 @@
     <section class="books-section">
         <div class="container">
             <div class="section-header">
-                <h2>Book Collection</h2>
+                <div>
+                    <p class="eyebrow">Colección</p>
+                    <h2>Libros disponibles</h2>
+                </div>
                 <div class="section-actions">
                     <button class="btn btn-outline desktop-only" onclick="loadBooks()">
-                        <i class="fas fa-sync-alt"></i> Refresh
+                        <i class="fas fa-sync-alt"></i> Refrescar
                     </button>
-                    <button class="btn-icon mobile-only" onclick="loadBooks()">
+                    <button class="btn-icon mobile-only" onclick="loadBooks()" aria-label="Refrescar libros">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
@@ -272,6 +359,37 @@
 
     <!-- Toast Container -->
     <div id="toastContainer" class="toast-container"></div>
+
+    <!-- FAB action sheet (mobile) -->
+    <div id="fabOverlay" class="fab-overlay" onclick="closeFabSheet()"></div>
+    <div class="fab-container mobile-only">
+        <div id="fabSheet" class="fab-sheet">
+            <button class="fab-sheet-item" onclick="showAddBookModal(); closeFabSheet();">
+                <i class="fas fa-plus"></i>
+                <div>
+                    <p>Agregar libro</p>
+                    <small>Nuevo título</small>
+                </div>
+            </button>
+            <button class="fab-sheet-item" onclick="showCreateLoanModal(); closeFabSheet();">
+                <i class="fas fa-hand-holding"></i>
+                <div>
+                    <p>Nuevo préstamo</p>
+                    <small>Entrega</small>
+                </div>
+            </button>
+            <button class="fab-sheet-item" onclick="showReturnBookModal(); closeFabSheet();">
+                <i class="fas fa-undo"></i>
+                <div>
+                    <p>Devolver</p>
+                    <small>Registrar retorno</small>
+                </div>
+            </button>
+        </div>
+        <button class="fab-main" onclick="toggleFabSheet()" aria-label="Acciones rápidas">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
 
     <script src="app.js"></script>
 </body>

@@ -1,6 +1,21 @@
 // Configuration
 const API_BASE_URL = 'https://7dw5nfrm5h.execute-api.us-east-1.amazonaws.com/dev';
 
+const PALETTES = {
+    indigo: {
+        primary: '#3f51b5', primaryDark: '#303f9f', success: '#4caf50', background: '#f5f7fb', surface: '#ffffff', text: '#0f172a', textMuted: '#5c6b7a', border: '#e3e7ef'
+    },
+    teal: {
+        primary: '#009688', primaryDark: '#00796b', success: '#26a69a', background: '#f3f7f6', surface: '#ffffff', text: '#0f172a', textMuted: '#4b5563', border: '#d7e2dd'
+    },
+    amber: {
+        primary: '#ffb300', primaryDark: '#f59e00', success: '#4caf50', background: '#fdf8ed', surface: '#ffffff', text: '#0f172a', textMuted: '#6b7280', border: '#f0e6d7'
+    },
+    slate: {
+        primary: '#546e7a', primaryDark: '#37474f', success: '#8bc34a', background: '#f6f7f9', surface: '#ffffff', text: '#0f172a', textMuted: '#4b5563', border: '#e4e8ee'
+    }
+};
+
 // Global state
 let searchTimeout;
 let currentBooks = [];
@@ -13,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeApp() {
     loadTheme();
+    loadPalette();
     loadBooks();
     updateStats();
     setupEventListeners();
@@ -59,6 +75,12 @@ function setupEventListeners() {
             if (activeModal) {
                 closeModal(activeModal.id);
             }
+            if (isMobileMenuOpen()) {
+                closeMobileMenu();
+            }
+            if (isFabSheetOpen()) {
+                closeFabSheet();
+            }
         }
     });
 
@@ -90,6 +112,7 @@ function toggleTheme() {
 
 function updateThemeIcon() {
     const icon = document.getElementById('themeIcon');
+    if (!icon) return;
     icon.className = currentTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
 }
 
@@ -119,6 +142,7 @@ async function apiCall(endpoint, options = {}) {
 // Book Functions
 async function loadBooks() {
     try {
+        showBooksSkeleton();
         const data = await apiCall('/books');
         currentBooks = data.books || [];
         displayBooks(currentBooks);
@@ -147,6 +171,7 @@ function displayBooks(books) {
             ${book.publisher ? `<p><strong>Publisher:</strong> ${escapeHtml(book.publisher)}</p>` : ''}
             ${book.publication_year ? `<p><strong>Year:</strong> ${book.publication_year}</p>` : ''}
             ${book.pages ? `<p><strong>Pages:</strong> ${book.pages}</p>` : ''}
+            ${renderAvailability(book)}
             <div class="book-meta">
                 <span class="badge badge-primary">${book.total_copies} copies</span>
                 <span class="badge badge-secondary">${book.max_loan_weeks}w loan</span>
@@ -463,7 +488,70 @@ function updateStats() {
 
 // Mobile Functions
 function toggleMobileMenu() {
-    showToast('Mobile menu coming soon!', 'info');
+    const drawer = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileMenuOverlay');
+    if (!drawer || !overlay) return;
+
+    const isOpen = drawer.classList.toggle('open');
+    overlay.classList.toggle('active', isOpen);
+    document.body.classList.toggle('menu-open', isOpen);
+}
+
+function closeMobileMenu() {
+    const drawer = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileMenuOverlay');
+    if (!drawer || !overlay) return;
+    drawer.classList.remove('open');
+    overlay.classList.remove('active');
+    document.body.classList.remove('menu-open');
+}
+
+function isMobileMenuOpen() {
+    const drawer = document.getElementById('mobileMenu');
+    return drawer ? drawer.classList.contains('open') : false;
+}
+
+function toggleFabSheet() {
+    const sheet = document.getElementById('fabSheet');
+    const overlay = document.getElementById('fabOverlay');
+    if (!sheet || !overlay) return;
+    const isOpen = sheet.classList.toggle('open');
+    overlay.classList.toggle('active', isOpen);
+    document.body.classList.toggle('menu-open', isOpen);
+}
+
+function closeFabSheet() {
+    const sheet = document.getElementById('fabSheet');
+    const overlay = document.getElementById('fabOverlay');
+    if (!sheet || !overlay) return;
+    sheet.classList.remove('open');
+    overlay.classList.remove('active');
+    document.body.classList.remove('menu-open');
+}
+
+function isFabSheetOpen() {
+    const sheet = document.getElementById('fabSheet');
+    return sheet ? sheet.classList.contains('open') : false;
+}
+
+function applyPalette(name) {
+    const palette = PALETTES[name];
+    if (!palette) return;
+    const root = document.documentElement;
+    root.style.setProperty('--primary', palette.primary);
+    root.style.setProperty('--primary-dark', palette.primaryDark);
+    root.style.setProperty('--success', palette.success);
+    root.style.setProperty('--background', palette.background);
+    root.style.setProperty('--surface', palette.surface);
+    root.style.setProperty('--text', palette.text);
+    root.style.setProperty('--text-muted', palette.textMuted);
+    root.style.setProperty('--border', palette.border);
+    localStorage.setItem('palette', name);
+}
+
+function loadPalette() {
+    const saved = localStorage.getItem('palette') || 'indigo';
+    applyPalette(saved);
 }
 
 function filterBooks(type) {
@@ -483,6 +571,41 @@ function escapeHtml(text) {
         "'": '&#039;'
     };
     return text ? text.replace(/[&<>"']/g, m => map[m]) : '';
+}
+
+function renderAvailability(book) {
+    const total = book.total_copies || 0;
+    const available = book.available_copies != null ? book.available_copies : total;
+    const percent = total ? Math.max(0, Math.min(100, Math.round((available / total) * 100))) : 0;
+    if (total === 0) return '';
+    return `
+        <div class="availability">
+            <div class="availability-text">
+                <span>Disponibilidad</span>
+                <span>${available} / ${total}</span>
+            </div>
+            <div class="availability-bar">
+                <div class="availability-fill" style="width: ${percent}%"></div>
+            </div>
+        </div>
+    `;
+}
+
+function showBooksSkeleton(count = 6) {
+    const container = document.getElementById('booksContainer');
+    if (!container) return;
+    const skeletons = Array.from({ length: count }).map(() => `
+        <div class="skeleton-card">
+            <div class="skeleton-line w-80 skeleton-pulse"></div>
+            <div class="skeleton-line w-60 skeleton-pulse"></div>
+            <div class="skeleton-line w-40 skeleton-pulse"></div>
+            <div style="margin-top: 0.8rem; display: flex; gap: 0.4rem;">
+                <span class="skeleton-pill skeleton-pulse"></span>
+                <span class="skeleton-pill skeleton-pulse" style="width: 60px;"></span>
+            </div>
+        </div>
+    `).join('');
+    container.innerHTML = `<div class="skeleton-grid">${skeletons}</div>`;
 }
 
 // Detect mobile device

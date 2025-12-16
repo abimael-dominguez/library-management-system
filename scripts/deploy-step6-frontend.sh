@@ -52,14 +52,14 @@ EOF
     echo "✅ Configuración de website aplicada"
 fi
 
-# Verificar si ya hay archivos en el bucket
-FILE_COUNT=$(aws s3 ls s3://$BUCKET_NAME --profile $PROFILE --region $REGION 2>/dev/null | wc -l)
-if [ "$FILE_COUNT" -gt "0" ]; then
-    echo "⏭️  El bucket ya tiene $FILE_COUNT archivos, saltando subida..."
-    exit 0
-fi
+# Verificar si ya hay archivos en el bucket (comentado para permitir actualizaciones)
+# FILE_COUNT=$(aws s3 ls s3://$BUCKET_NAME --profile $PROFILE --region $REGION 2>/dev/null | wc -l)
+# if [ "$FILE_COUNT" -gt "0" ]; then
+#     echo "⏭️  El bucket ya tiene $FILE_COUNT archivos, saltando subida..."
+#     exit 0
+# fi
 
-echo "Bucket vacío, subiendo archivos..."
+echo "Subiendo archivos actualizados..."
 
 # Subir archivos
 aws s3 sync frontend/src/ s3://$BUCKET_NAME/ --profile $PROFILE --region $REGION --delete
