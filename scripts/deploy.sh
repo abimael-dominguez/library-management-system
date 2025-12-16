@@ -34,9 +34,7 @@ echo "✅ Deploying to environment: $ENVIRONMENT"
 
 # Build Lambda Layer dependencies
 echo "📦 Building Lambda Layer dependencies..."
-cd layers/dependencies
-pip install -r requirements.txt -t python/
-cd ../..
+./scripts/build-layer.sh
 
 # Build SAM application
 echo "🔨 Building SAM application..."
