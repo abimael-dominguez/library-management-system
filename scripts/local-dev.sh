@@ -11,6 +11,23 @@ case $ACTION in
     start)
         echo "🚀 Starting local development environment..."
         
+        # Check prerequisites
+        echo "🔍 Checking prerequisites..."
+        
+        if ! command -v aws &> /dev/null; then
+            echo "❌ AWS CLI not found. Please install AWS CLI first."
+            echo "   https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html"
+            exit 1
+        fi
+        
+        if ! command -v sam &> /dev/null; then
+            echo "❌ SAM CLI not found. Please install SAM CLI first."
+            echo "   https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html"
+            exit 1
+        fi
+        
+        echo "✅ AWS CLI and SAM CLI found"
+        
         # Start DynamoDB Local
         echo "📦 Starting DynamoDB Local..."
         docker-compose up -d dynamodb-local
@@ -32,23 +49,26 @@ case $ACTION in
                 AttributeName=pk,KeyType=HASH \
                 AttributeName=sk,KeyType=RANGE \
             --global-secondary-indexes \
-                IndexName=GSI1,KeySchema=[{AttributeName=gsi1pk,KeyType=HASH},{AttributeName=gsi1sk,KeyType=RANGE}],Projection={ProjectionType=ALL},BillingMode=PAY_PER_REQUEST \
+                'IndexName=GSI1,KeySchema=[{AttributeName=gsi1pk,KeyType=HASH},{AttributeName=gsi1sk,KeyType=RANGE}],Projection={ProjectionType=ALL}' \
             --billing-mode PAY_PER_REQUEST \
             --endpoint-url http://localhost:8000 \
-            --region us-east-1 || echo "Table might already exist"
+            --region us-east-1 2>/dev/null || echo "✅ Table already exists or created"
         
-        # Build SAM application
+        # Build and start SAM application
         echo "🔨 Building SAM application..."
         sam build
         
-        # Start SAM Local API
         echo "🌐 Starting SAM Local API..."
         echo "API will be available at: http://localhost:3000"
         echo "DynamoDB Local: http://localhost:8000"
+        echo "Frontend: http://localhost:8080"
         echo ""
         echo "Press Ctrl+C to stop"
         
-        # Set environment variables for local development
+        # Start frontend
+        docker-compose up -d frontend
+        
+        # Set environment variables
         export DYNAMODB_TABLE=lms-local
         export DYNAMODB_ENDPOINT=http://localhost:8000
         export AWS_ACCESS_KEY_ID=dummy

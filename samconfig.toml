@@ -1,4 +1,5 @@
 # SAM configuration file for LMS deployment
+version = 0.1
 
 [default]
 [default.global]
