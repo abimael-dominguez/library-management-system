@@ -1,282 +1,113 @@
-"""
-DynamoDB Member Repository Implementation
-"""
-
-import boto3
+import os
 from typing import List, Optional
-from datetime import datetime
-from botocore.exceptions import ClientError
+from datetime import datetime, date
+import boto3
+from boto3.dynamodb.conditions import Key, Attr
 
-from ...domain.repositories.member_repository import MemberRepository, EmployeeRepository
-from ...domain.entities.member import Member, Employee, MemberSearchResult, EmployeeSearchResult
-from ...shared.exceptions import MemberNotFoundError, ValidationError
+from ...domain.entities.member import Member, MemberStatus
+from ...domain.repositories.member_repository import MemberRepository
+
 
 class DynamoMemberRepository(MemberRepository):
-    """DynamoDB implementation of MemberRepository"""
-    
-    def __init__(self, table_name: str = 'lms-main', region: str = 'us-east-1'):
-        self.table_name = table_name
-        self.dynamodb = boto3.resource('dynamodb', region_name=region)
-        self.table = self.dynamodb.Table(table_name)
-    
+    def __init__(self, table_name: str = None, dynamodb=None):
+        self.table_name = table_name or os.environ.get('DYNAMODB_TABLE', 'lms-table')
+        self.dynamodb = dynamodb or boto3.resource('dynamodb')
+        self.table = self.dynamodb.Table(self.table_name)
+
     async def create_member(self, member: Member) -> Member:
-        """Create a new member"""
-        member.created_at = datetime.utcnow()
-        member.updated_at = datetime.utcnow()
+        item = {
+            'pk': f'MEMBER#{member.member_id}',
+            'sk': 'METADATA',
+            'gsi1pk': 'SEARCH#member',
+            'gsi1sk': f"{member.first_name.lower()} {member.last_name.lower()}",
+            'entity_type': 'member',
+            'member_id': member.member_id,
+            'first_name': member.first_name,
+            'last_name': member.last_name,
+            'email': member.email,
+            'address': member.address,
+            'phone': member.phone,
+            'registration_date': member.registration_date.isoformat() if member.registration_date else None,
+            'status': member.status.value,
+            'created_at': member.created_at.isoformat() if member.created_at else None,
+            'updated_at': member.updated_at.isoformat() if member.updated_at else None
+        }
         
-        try:
-            self.table.put_item(
-                Item=member.to_dynamodb_item(),
-                ConditionExpression='attribute_not_exists(PK)'
-            )
-            return member
-        except ClientError as e:
-            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                raise ValidationError(f"Member with ID {member.id} already exists")
-            raise
-    
+        item = {k: v for k, v in item.items() if v is not None}
+        self.table.put_item(Item=item)
+        return member
+
     async def get_member_by_id(self, member_id: str) -> Optional[Member]:
-        """Get member by ID"""
-        try:
-            response = self.table.get_item(
-                Key={'PK': f'M#{member_id}', 'SK': f'M#{member_id}'}
-            )
-            
-            if 'Item' in response:
-                return Member.from_dynamodb_item(response['Item'])
-            return None
-            
-        except ClientError as e:
-            print(f"Error getting member {member_id}: {e}")
-            return None
-    
-    async def get_member_by_email(self, email: str) -> Optional[Member]:
-        """Get member by email using GSI1"""
-        try:
-            response = self.table.query(
-                IndexName='GSI1',
-                KeyConditionExpression='GSI1PK = :search AND contains(GSI1SK, :email)',
-                ExpressionAttributeValues={
-                    ':search': 'SEARCH',
-                    ':email': email.lower()
-                },
-                Limit=1
-            )
-            
-            for item in response['Items']:
-                if item.get('Email', '').lower() == email.lower():
-                    return Member.from_dynamodb_item(item)
-            
-            return None
-            
-        except ClientError as e:
-            print(f"Error getting member by email {email}: {e}")
-            return None
-    
-    async def search_members(self, query: str, limit: int = 10) -> List[MemberSearchResult]:
-        """Search members for autocomplete"""
-        try:
-            response = self.table.query(
-                IndexName='GSI1',
-                KeyConditionExpression='GSI1PK = :search AND begins_with(GSI1SK, :query)',
-                ExpressionAttributeValues={
-                    ':search': 'SEARCH',
-                    ':query': query.strip().lower()
-                },
-                Limit=limit,
-                ProjectionExpression='Id, FN, LN, Email, #status',
-                ExpressionAttributeNames={'#status': 'Status'}
-            )
-            
-            results = []
-            for item in response['Items']:
-                # Only include items that are members (have Email field)
-                if item.get('Email') and '@' in item.get('Email', ''):
-                    full_name = f"{item.get('FN', '')} {item.get('LN', '')}".strip()
-                    results.append(MemberSearchResult(
-                        id=item['Id'],
-                        full_name=full_name,
-                        email=item['Email'],
-                        status=item.get('Status', 'active')
-                    ))
-            
-            return results
-            
-        except ClientError as e:
-            print(f"Error searching members: {e}")
-            return []
-    
-    async def update_member(self, member: Member) -> Member:
-        """Update existing member"""
-        member.updated_at = datetime.utcnow()
+        response = self.table.get_item(
+            Key={'pk': f'MEMBER#{member_id}', 'sk': 'METADATA'}
+        )
         
+        if 'Item' not in response:
+            return None
+            
+        return self._item_to_member(response['Item'])
+
+    async def search_members(self, query: str, limit: int = 10) -> List[Member]:
+        response = self.table.query(
+            IndexName='GSI1',
+            KeyConditionExpression=Key('gsi1pk').eq('SEARCH#member') & Key('gsi1sk').begins_with(query.lower()),
+            Limit=limit
+        )
+        
+        return [self._item_to_member(item) for item in response.get('Items', [])]
+
+    async def autocomplete_members(self, query: str, limit: int = 5) -> List[dict]:
+        response = self.table.query(
+            IndexName='GSI1',
+            KeyConditionExpression=Key('gsi1pk').eq('SEARCH#member') & Key('gsi1sk').begins_with(query.lower()),
+            Limit=limit,
+            ProjectionExpression='member_id, first_name, last_name'
+        )
+        
+        return [{'id': item['member_id'], 'name': f"{item['first_name']} {item['last_name']}"} 
+                for item in response.get('Items', [])]
+
+    async def list_members(self, limit: int = 50, last_key: Optional[str] = None) -> tuple[List[Member], Optional[str]]:
+        kwargs = {
+            'IndexName': 'GSI1',
+            'KeyConditionExpression': Key('gsi1pk').eq('SEARCH#member'),
+            'Limit': limit
+        }
+        
+        if last_key:
+            kwargs['ExclusiveStartKey'] = {'gsi1pk': 'SEARCH#member', 'gsi1sk': last_key}
+        
+        response = self.table.query(**kwargs)
+        members = [self._item_to_member(item) for item in response.get('Items', [])]
+        
+        next_key = None
+        if 'LastEvaluatedKey' in response:
+            next_key = response['LastEvaluatedKey']['gsi1sk']
+        
+        return members, next_key
+
+    async def update_member(self, member: Member) -> Member:
+        return await self.create_member(member)
+
+    async def delete_member(self, member_id: str) -> bool:
         try:
-            self.table.put_item(
-                Item=member.to_dynamodb_item(),
-                ConditionExpression='attribute_exists(PK)'
-            )
-            return member
-        except ClientError as e:
-            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                raise MemberNotFoundError(f"Member with ID {member.id} not found")
-            raise
-    
-    async def update_member_status(self, member_id: str, status: str) -> bool:
-        """Update member status"""
-        try:
-            self.table.update_item(
-                Key={'PK': f'M#{member_id}', 'SK': f'M#{member_id}'},
-                UpdateExpression='SET #status = :status, Updated = :updated',
-                ExpressionAttributeNames={'#status': 'Status'},
-                ExpressionAttributeValues={
-                    ':status': status,
-                    ':updated': datetime.utcnow().isoformat() + 'Z'
-                },
-                ConditionExpression='attribute_exists(PK)'
+            self.table.delete_item(
+                Key={'pk': f'MEMBER#{member_id}', 'sk': 'METADATA'}
             )
             return True
-        except ClientError as e:
-            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-                return False
-            raise
-    
-    async def list_members(self, limit: int = 50, last_key: Optional[str] = None) -> dict:
-        """List members with pagination"""
-        try:
-            scan_params = {
-                'FilterExpression': '#type = :type',
-                'ExpressionAttributeNames': {'#type': 'Type'},
-                'ExpressionAttributeValues': {':type': 'MEMBER'},
-                'Limit': limit
-            }
-            
-            if last_key:
-                scan_params['ExclusiveStartKey'] = {'PK': f'M#{last_key}', 'SK': f'M#{last_key}'}
-            
-            response = self.table.scan(**scan_params)
-            
-            members = [Member.from_dynamodb_item(item) for item in response['Items']]
-            
-            return {
-                'members': members,
-                'last_key': response.get('LastEvaluatedKey', {}).get('PK', '').replace('M#', '') if 'LastEvaluatedKey' in response else None,
-                'has_more': 'LastEvaluatedKey' in response
-            }
-            
-        except ClientError as e:
-            print(f"Error listing members: {e}")
-            return {'members': [], 'last_key': None, 'has_more': False}
-    
-    async def get_active_members(self, limit: int = 50) -> List[Member]:
-        """Get all active members"""
-        try:
-            response = self.table.scan(
-                FilterExpression='#type = :type AND #status = :status',
-                ExpressionAttributeNames={
-                    '#type': 'Type',
-                    '#status': 'Status'
-                },
-                ExpressionAttributeValues={
-                    ':type': 'MEMBER',
-                    ':status': 'active'
-                },
-                Limit=limit
-            )
-            
-            return [Member.from_dynamodb_item(item) for item in response['Items']]
-            
-        except ClientError as e:
-            print(f"Error getting active members: {e}")
-            return []
+        except Exception:
+            return False
 
-class DynamoEmployeeRepository(EmployeeRepository):
-    """DynamoDB implementation of EmployeeRepository"""
-    
-    def __init__(self, table_name: str = 'lms-main', region: str = 'us-east-1'):
-        self.table_name = table_name
-        self.dynamodb = boto3.resource('dynamodb', region_name=region)
-        self.table = self.dynamodb.Table(table_name)
-    
-    async def create_employee(self, employee: Employee) -> Employee:
-        """Create a new employee"""
-        employee.created_at = datetime.utcnow()
-        employee.updated_at = datetime.utcnow()
-        
-        try:
-            self.table.put_item(Item=employee.to_dynamodb_item())
-            return employee
-        except ClientError as e:
-            print(f"Error creating employee: {e}")
-            raise
-    
-    async def get_employee_by_id(self, employee_id: str) -> Optional[Employee]:
-        """Get employee by ID"""
-        try:
-            response = self.table.get_item(
-                Key={'PK': f'E#{employee_id}', 'SK': f'E#{employee_id}'}
-            )
-            
-            if 'Item' in response:
-                return Employee.from_dynamodb_item(response['Item'])
-            return None
-            
-        except ClientError as e:
-            print(f"Error getting employee {employee_id}: {e}")
-            return None
-    
-    async def search_employees(self, query: str, limit: int = 10) -> List[EmployeeSearchResult]:
-        """Search employees for selection"""
-        try:
-            response = self.table.query(
-                IndexName='GSI1',
-                KeyConditionExpression='GSI1PK = :search AND begins_with(GSI1SK, :query)',
-                ExpressionAttributeValues={
-                    ':search': 'SEARCH',
-                    ':query': query.strip().lower()
-                },
-                Limit=limit,
-                ProjectionExpression='Id, FN, LN, Pos'
-            )
-            
-            results = []
-            for item in response['Items']:
-                # Only include items that are employees (have Pos field)
-                if item.get('Pos'):
-                    full_name = f"{item.get('FN', '')} {item.get('LN', '')}".strip()
-                    results.append(EmployeeSearchResult(
-                        id=item['Id'],
-                        full_name=full_name,
-                        position=item['Pos']
-                    ))
-            
-            return results
-            
-        except ClientError as e:
-            print(f"Error searching employees: {e}")
-            return []
-    
-    async def update_employee(self, employee: Employee) -> Employee:
-        """Update existing employee"""
-        employee.updated_at = datetime.utcnow()
-        
-        try:
-            self.table.put_item(Item=employee.to_dynamodb_item())
-            return employee
-        except ClientError as e:
-            print(f"Error updating employee: {e}")
-            raise
-    
-    async def list_employees(self) -> List[Employee]:
-        """List all employees (small dataset)"""
-        try:
-            response = self.table.scan(
-                FilterExpression='#type = :type',
-                ExpressionAttributeNames={'#type': 'Type'},
-                ExpressionAttributeValues={':type': 'EMPLOYEE'}
-            )
-            
-            return [Employee.from_dynamodb_item(item) for item in response['Items']]
-            
-        except ClientError as e:
-            print(f"Error listing employees: {e}")
-            return []
+    def _item_to_member(self, item: dict) -> Member:
+        return Member(
+            member_id=item['member_id'],
+            first_name=item['first_name'],
+            last_name=item['last_name'],
+            email=item['email'],
+            address=item.get('address'),
+            phone=item.get('phone'),
+            registration_date=date.fromisoformat(item['registration_date']) if item.get('registration_date') else None,
+            status=MemberStatus(item['status']),
+            created_at=datetime.fromisoformat(item['created_at']) if item.get('created_at') else None,
+            updated_at=datetime.fromisoformat(item['updated_at']) if item.get('updated_at') else None
+        )

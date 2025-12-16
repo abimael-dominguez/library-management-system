@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: 'Serverless Library Management System (LMS) - Cost-optimized infrastructure'
+Description: Serverless Library Management System
 
 Parameters:
   Environment:
@@ -9,29 +9,29 @@ Parameters:
     AllowedValues: [dev, prod]
     Description: Environment name
   
-  BucketName:
+  TableName:
     Type: String
-    Default: lms-static-data
-    Description: S3 bucket name for static frontend assets
+    Default: lms-table
+    Description: DynamoDB table name
 
 Globals:
   Function:
-    Runtime: python3.11
     Timeout: 30
     MemorySize: 256
+    Runtime: python3.11
     Environment:
       Variables:
         DYNAMODB_TABLE: !Ref LibraryTable
         ENVIRONMENT: !Ref Environment
     Layers:
-      - !Ref DependenciesLayer
+      - !Ref CommonLayer
 
 Resources:
-  # DynamoDB Table - Single table design for cost optimization
+  # DynamoDB Table
   LibraryTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub 'lms-${Environment}'
+      TableName: !Sub "${TableName}-${Environment}"
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: pk
@@ -59,35 +59,34 @@ Resources:
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
       PointInTimeRecoverySpecification:
-        PointInTimeRecoveryEnabled: false
+        PointInTimeRecoveryEnabled: true
       Tags:
         - Key: Environment
           Value: !Ref Environment
         - Key: Project
-          Value: LMS
+          Value: LibraryManagementSystem
 
-  # Lambda Layer for dependencies
-  DependenciesLayer:
+  # Lambda Layer for common dependencies
+  CommonLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
-      LayerName: !Sub 'lms-dependencies-${Environment}'
-      Description: Dependencies for LMS Lambda functions
-      ContentUri: layers/dependencies/
+      LayerName: !Sub "lms-common-layer-${Environment}"
+      Description: Common dependencies for LMS
+      ContentUri: layers/common/
       CompatibleRuntimes:
         - python3.11
       RetentionPolicy: Delete
 
   # API Gateway
-  LmsApi:
+  LibraryApi:
     Type: AWS::Serverless::Api
     Properties:
-      Name: !Sub 'lms-api-${Environment}'
+      Name: !Sub "lms-api-${Environment}"
       StageName: !Ref Environment
       Cors:
         AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
         AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
         AllowOrigin: "'*'"
-        MaxAge: "'600'"
       GatewayResponses:
         DEFAULT_4XX:
           ResponseParameters:
@@ -100,142 +99,99 @@ Resources:
               Access-Control-Allow-Origin: "'*'"
               Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
 
-  # Lambda Functions
-  SearchFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub 'lms-search-${Environment}'
-      CodeUri: src/
-      Handler: application.lambda_handlers.search_handler.lambda_handler
-      Description: Handle search and autocomplete operations
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref LibraryTable
-        - DynamoDBReadPolicy:
-            TableName: !Sub '${LibraryTable}/index/GSI1'
-      Events:
-        SearchApi:
-          Type: Api
-          Properties:
-            RestApiId: !Ref LmsApi
-            Path: /search
-            Method: GET
-        AutocompleteApi:
-          Type: Api
-          Properties:
-            RestApiId: !Ref LmsApi
-            Path: /autocomplete
-            Method: GET
-
-  LoansFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub 'lms-loans-${Environment}'
-      CodeUri: src/
-      Handler: application.lambda_handlers.loans_handler.lambda_handler
-      Description: Handle loan and return operations
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref LibraryTable
-        - DynamoDBReadPolicy:
-            TableName: !Sub '${LibraryTable}/index/GSI1'
-      Events:
-        CreateLoanApi:
-          Type: Api
-          Properties:
-            RestApiId: !Ref LmsApi
-            Path: /loans
-            Method: POST
-        ReturnBookApi:
-          Type: Api
-          Properties:
-            RestApiId: !Ref LmsApi
-            Path: /loans/{loan_id}/return
-            Method: PUT
-        GetLoansApi:
-          Type: Api
-          Properties:
-            RestApiId: !Ref LmsApi
-            Path: /loans
-            Method: GET
-
+  # Books Lambda Function
   BooksFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'lms-books-${Environment}'
+      FunctionName: !Sub "lms-books-${Environment}"
       CodeUri: src/
-      Handler: application.lambda_handlers.books_handler.lambda_handler
-      Description: Handle book CRUD operations
+      Handler: application.lambda_handlers.books_handler_simple.lambda_handler
+      Description: Handle books operations
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref LibraryTable
-        - DynamoDBReadPolicy:
-            TableName: !Sub '${LibraryTable}/index/GSI1'
       Events:
-        CreateBookApi:
+        ListBooks:
           Type: Api
           Properties:
-            RestApiId: !Ref LmsApi
-            Path: /books
-            Method: POST
-        GetBooksApi:
-          Type: Api
-          Properties:
-            RestApiId: !Ref LmsApi
+            RestApiId: !Ref LibraryApi
             Path: /books
             Method: GET
-        GetBookApi:
+        CreateBook:
           Type: Api
           Properties:
-            RestApiId: !Ref LmsApi
+            RestApiId: !Ref LibraryApi
+            Path: /books
+            Method: POST
+        GetBook:
+          Type: Api
+          Properties:
+            RestApiId: !Ref LibraryApi
             Path: /books/{book_id}
             Method: GET
+        SearchBooks:
+          Type: Api
+          Properties:
+            RestApiId: !Ref LibraryApi
+            Path: /search
+            Method: GET
+        AutocompleteBooks:
+          Type: Api
+          Properties:
+            RestApiId: !Ref LibraryApi
+            Path: /autocomplete
+            Method: GET
 
-  MembersFunction:
+  # Loans Lambda Function
+  LoansFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub 'lms-members-${Environment}'
+      FunctionName: !Sub "lms-loans-${Environment}"
       CodeUri: src/
-      Handler: application.lambda_handlers.members_handler.lambda_handler
-      Description: Handle member CRUD operations
+      Handler: application.lambda_handlers.loans_handler.lambda_handler
+      Description: Handle loans operations
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref LibraryTable
-        - DynamoDBReadPolicy:
-            TableName: !Sub '${LibraryTable}/index/GSI1'
       Events:
-        CreateMemberApi:
+        ListLoans:
           Type: Api
           Properties:
-            RestApiId: !Ref LmsApi
-            Path: /members
+            RestApiId: !Ref LibraryApi
+            Path: /loans
+            Method: GET
+        CreateLoan:
+          Type: Api
+          Properties:
+            RestApiId: !Ref LibraryApi
+            Path: /loans
             Method: POST
-        GetMembersApi:
+        GetLoan:
           Type: Api
           Properties:
-            RestApiId: !Ref LmsApi
-            Path: /members
+            RestApiId: !Ref LibraryApi
+            Path: /loans/{loan_id}
             Method: GET
-        GetMemberApi:
+        ReturnLoan:
           Type: Api
           Properties:
-            RestApiId: !Ref LmsApi
-            Path: /members/{member_id}
-            Method: GET
+            RestApiId: !Ref LibraryApi
+            Path: /loans/{loan_id}/return
+            Method: PUT
 
-  # S3 Bucket for static frontend
+  # S3 Bucket for static website
   StaticWebsiteBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub '${BucketName}-${Environment}'
-      WebsiteConfiguration:
-        IndexDocument: index.html
-        ErrorDocument: error.html
+      BucketName: !Sub "lms-static-${Environment}-${AWS::AccountId}-${AWS::Region}"
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false
         IgnorePublicAcls: false
         RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
       CorsConfiguration:
         CorsRules:
           - AllowedHeaders: ['*']
@@ -254,29 +210,29 @@ Resources:
             Effect: Allow
             Principal: '*'
             Action: s3:GetObject
-            Resource: !Sub '${StaticWebsiteBucket}/*'
+            Resource: !Sub "${StaticWebsiteBucket}/*"
 
 Outputs:
-  ApiGatewayUrl:
+  ApiUrl:
     Description: API Gateway endpoint URL
-    Value: !Sub 'https://${LmsApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Value: !Sub "https://${LibraryApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
     Export:
-      Name: !Sub '${AWS::StackName}-ApiUrl'
+      Name: !Sub "${AWS::StackName}-ApiUrl"
 
-  DynamoDBTableName:
-    Description: DynamoDB table name
-    Value: !Ref LibraryTable
-    Export:
-      Name: !Sub '${AWS::StackName}-TableName'
-
-  StaticWebsiteUrl:
+  WebsiteUrl:
     Description: Static website URL
     Value: !GetAtt StaticWebsiteBucket.WebsiteURL
     Export:
-      Name: !Sub '${AWS::StackName}-WebsiteUrl'
+      Name: !Sub "${AWS::StackName}-WebsiteUrl"
 
-  StaticWebsiteBucket:
-    Description: S3 bucket name for static assets
+  DynamoDBTable:
+    Description: DynamoDB table name
+    Value: !Ref LibraryTable
+    Export:
+      Name: !Sub "${AWS::StackName}-DynamoDBTable"
+
+  S3Bucket:
+    Description: S3 bucket name for static website
     Value: !Ref StaticWebsiteBucket
     Export:
-      Name: !Sub '${AWS::StackName}-BucketName'
+      Name: !Sub "${AWS::StackName}-S3Bucket"

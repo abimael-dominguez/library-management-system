@@ -1,1 +1,0 @@
-# Application Layer - Use Cases and Lambda Handlers

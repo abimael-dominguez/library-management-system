@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Digital Library Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Library">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-book-open"></i>
+                <span class="nav-title">Digital Library</span>
+            </div>
+            <div class="nav-actions">
+                <button class="btn btn-primary mobile-add" onclick="showAddBookModal()">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <button class="btn btn-secondary mobile-only" onclick="showCreateLoanModal()">
+                    <i class="fas fa-hand-holding"></i>
+                </button>
+                <button class="btn btn-success mobile-only" onclick="showReturnBookModal()">
+                    <i class="fas fa-undo"></i>
+                </button>
+                <button class="btn-icon" onclick="toggleTheme()">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </button>
+                <button class="btn-icon mobile-menu" onclick="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Manage Your Library</h1>
+            <p>Streamlined book management with modern tools</p>
+            <div class="hero-actions desktop-only">
+                <button class="btn btn-primary" onclick="showAddBookModal()">
+                    <i class="fas fa-plus"></i> Add Book
+                </button>
+                <button class="btn btn-secondary" onclick="showCreateLoanModal()">
+                    <i class="fas fa-hand-holding"></i> New Loan
+                </button>
+                <button class="btn btn-success" onclick="showReturnBookModal()">
+                    <i class="fas fa-undo"></i> Return Book
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Search Section -->
+    <section class="search-section">
+        <div class="container">
+            <div class="search-card">
+                <div class="search-header">
+                    <i class="fas fa-search"></i>
+                    <h2>Find Books</h2>
+                </div>
+                <div class="search-container">
+                    <input type="text" class="search-input" id="searchInput" 
+                           placeholder="Search by title, author, or ISBN..." 
+                           onkeyup="searchBooks(this.value)">
+                    <div id="searchResults" class="search-results"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-card" onclick="filterBooks('all')">
+                    <div class="stat-icon">
+                        <i class="fas fa-books"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalBooks">0</h3>
+                        <p>Total Books</p>
+                    </div>
+                </div>
+                <div class="stat-card" onclick="showReturnBookModal()">
+                    <div class="stat-icon">
+                        <i class="fas fa-book-reader"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="activeLoans">0</h3>
+                        <p>Active Loans</p>
+                    </div>
+                </div>
+                <div class="stat-card" onclick="showToast('Members feature coming soon!', 'info')">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalMembers">0</h3>
+                        <p>Members</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Books Section -->
+    <section class="books-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Book Collection</h2>
+                <div class="section-actions">
+                    <button class="btn btn-outline desktop-only" onclick="loadBooks()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="btn-icon mobile-only" onclick="loadBooks()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="booksContainer" class="books-grid">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading books...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Add Book Modal -->
+    <div class="modal" id="addBookModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Book</h3>
+                <button class="btn-close" onclick="closeModal('addBookModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="addBookForm" class="modal-body">
+                <div class="form-group">
+                    <label>Title *</label>
+                    <input type="text" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label>Author *</label>
+                    <input type="text" name="author" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>ISBN</label>
+                        <input type="text" name="isbn">
+                    </div>
+                    <div class="form-group">
+                        <label>Publisher</label>
+                        <input type="text" name="publisher">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Year</label>
+                        <input type="number" name="publication_year" min="1000" max="2100">
+                    </div>
+                    <div class="form-group">
+                        <label>Pages</label>
+                        <input type="number" name="pages" min="1">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Loan Weeks</label>
+                        <input type="number" name="max_loan_weeks" value="3" min="1" max="52">
+                    </div>
+                    <div class="form-group">
+                        <label>Copies</label>
+                        <input type="number" name="total_copies" value="1" min="1">
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('addBookModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="addBook()">Add Book</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Loan Modal -->
+    <div class="modal" id="createLoanModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Crear Préstamo</h3>
+                <button class="btn-close" onclick="closeModal('createLoanModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="createLoanForm" class="modal-body">
+                <div class="form-group">
+                    <label>Buscar Libro *</label>
+                    <div class="search-container">
+                        <input type="text" id="bookSearch" placeholder="Buscar por título o autor..." onkeyup="searchBooksForLoan(this.value)">
+                        <div id="bookSearchResults" class="search-results"></div>
+                    </div>
+                    <input type="hidden" name="book_copy_id" required>
+                </div>
+                <div class="form-group">
+                    <label>Buscar Miembro *</label>
+                    <div class="search-container">
+                        <input type="text" id="memberSearch" placeholder="Buscar por nombre..." onkeyup="searchMembersForLoan(this.value)">
+                        <div id="memberSearchResults" class="search-results"></div>
+                    </div>
+                    <input type="hidden" name="member_id" required>
+                </div>
+                <div class="form-group">
+                    <label>Empleado</label>
+                    <input type="text" name="employee_id" placeholder="Nombre del empleado">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Fecha de Préstamo *</label>
+                        <input type="date" name="loan_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Vencimiento *</label>
+                        <input type="date" name="due_date" required>
+                    </div>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('createLoanModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="createLoan()">Crear Préstamo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Return Book Modal -->
+    <div class="modal" id="returnBookModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Devolver Libro</h3>
+                <button class="btn-close" onclick="closeModal('returnBookModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="returnBookForm" class="modal-body">
+                <div class="form-group">
+                    <label>Buscar Préstamo Activo *</label>
+                    <div class="search-container">
+                        <input type="text" id="loanSearch" placeholder="Buscar por libro o miembro..." onkeyup="searchActiveLoans(this.value)">
+                        <div id="loanSearchResults" class="search-results"></div>
+                    </div>
+                    <input type="hidden" name="loan_id" required>
+                </div>
+                <div class="form-group">
+                    <label>Fecha de Devolución</label>
+                    <input type="date" name="return_date">
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('returnBookModal')">Cancelar</button>
+                <button class="btn btn-success" onclick="returnBook()">Devolver Libro</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,1 +1,0 @@
-# Lambda Handlers - API Gateway integrations

@@ -210,3 +210,15 @@ __marimo__/
 external/
 external/library-management-system/
 external/tabler/
+
+# AWS Lambda deployment artifacts
+*.zip
+lambda-layer/
+lambda-function/
+response.json
+test-event.json
+/tmp/
+
+# AWS SAM
+samconfig.toml
+.aws-sam/

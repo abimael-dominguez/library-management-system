@@ -1,1 +1,0 @@
-# DynamoDB Implementations - Infrastructure Layer

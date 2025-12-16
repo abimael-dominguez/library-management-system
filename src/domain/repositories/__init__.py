@@ -1,1 +1,0 @@
-# Repository Interfaces - Domain Layer Contracts

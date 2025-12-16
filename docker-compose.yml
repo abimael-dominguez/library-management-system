@@ -1,41 +1,36 @@
 version: '3.8'
 
 services:
-  # DynamoDB Local for testing
+  # Test runner
+  test:
+    build: .
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./htmlcov:/app/htmlcov
+    environment:
+      - PYTHONPATH=/app
+    command: pytest -v --cov=src --cov-report=term-missing --cov-report=html
+
+  # DynamoDB Local for integration tests
   dynamodb-local:
-    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
-    image: "amazon/dynamodb-local:latest"
+    image: amazon/dynamodb-local:latest
     container_name: lms-dynamodb-local
     ports:
       - "8000:8000"
-    volumes:
-      - "./local/dynamodb:/home/dynamodblocal/data"
-    working_dir: /home/dynamodblocal
-    environment:
-      - AWS_ACCESS_KEY_ID=dummy
-      - AWS_SECRET_ACCESS_KEY=dummy
-      - AWS_DEFAULT_REGION=us-east-1
-    networks:
-      - lms_network
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
 
-  # Note: Run SAM local from host machine:
-  # sam local start-api --docker-network lms_network --parameter-overrides 'Environment=local'
-  # This connects to DynamoDB Local running in this network
-
-  # Frontend development server (optional)
-  frontend:
-    image: nginx:alpine
-    container_name: lms-frontend
+  # Local API for testing
+  api:
+    build: .
     ports:
-      - "8080:80"
+      - "3000:3000"
+    environment:
+      - PYTHONPATH=/app
+      - DYNAMODB_ENDPOINT=http://dynamodb-local:8000
+      - DYNAMODB_TABLE=lms-table-local
+    depends_on:
+      - dynamodb-local
+    command: python -m src.local.api_server
     volumes:
-      - "./frontend:/usr/share/nginx/html:ro"
-    networks:
-      - lms_network
-
-volumes:
-  dynamodb-data:
-
-networks:
-  lms_network:
-    driver: bridge
+      - ./src:/app/src

@@ -1,121 +1,117 @@
-"""
-Books Lambda Handler
-Handles book CRUD operations
-"""
 import json
-import os
+import asyncio
 from typing import Dict, Any
-from infrastructure.dynamodb.book_repository_impl import DynamoBookRepository
-from domain.entities.book import Book
+
+from infrastructure.dynamodb.book_repository_impl import DynamoBookRepository, DynamoBookCopyRepository
+from application.use_cases.book_service import BookService
+from application.dto.book_dto import CreateBookRequest, SearchBooksRequest, AutocompleteRequest
 
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
-    """Handle book operations"""
-    
+    return asyncio.run(async_handler(event, context))
+
+
+async def async_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     # CORS headers
     headers = {
+        'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
         'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
     }
     
     try:
-        # Initialize repository
-        table_name = os.environ['DYNAMODB_TABLE']
-        book_repo = DynamoBookRepository(table_name)
+        # Initialize repositories and service
+        book_repo = DynamoBookRepository()
+        book_copy_repo = DynamoBookCopyRepository()
+        book_service = BookService(book_repo, book_copy_repo)
         
         http_method = event['httpMethod']
-        path_params = event.get('pathParameters') or {}
+        path = event['path']
         query_params = event.get('queryStringParameters') or {}
         
-        if http_method == 'GET':
-            if 'book_id' in path_params:
-                # Get single book
-                book_id = path_params['book_id']
-                book = book_repo.get_by_id(book_id)
-                
-                if not book:
-                    return {
-                        'statusCode': 404,
-                        'headers': headers,
-                        'body': json.dumps({'error': 'Book not found'})
-                    }
-                
-                return {
-                    'statusCode': 200,
-                    'headers': headers,
-                    'body': json.dumps(book.to_dict())
-                }
-            else:
-                # List books with pagination
-                limit = int(query_params.get('limit', 20))
-                last_key = query_params.get('last_key')
-                
-                books, next_key = book_repo.list_books(limit, last_key)
-                
-                response_data = {
-                    'books': [book.to_dict() for book in books],
-                    'next_key': next_key
-                }
-                
-                return {
-                    'statusCode': 200,
-                    'headers': headers,
-                    'body': json.dumps(response_data)
-                }
+        if http_method == 'OPTIONS':
+            return {'statusCode': 200, 'headers': headers, 'body': ''}
         
-        elif http_method == 'POST':
-            # Create new book
-            body = json.loads(event['body'])
+        # Route handling
+        if path == '/books' and http_method == 'GET':
+            limit = int(query_params.get('limit', 50))
+            last_key = query_params.get('lastKey')
+            books, next_key = await book_service.list_books(limit, last_key)
             
-            # Validate required fields
-            required_fields = ['title', 'author', 'isbn']
-            for field in required_fields:
-                if field not in body:
-                    return {
-                        'statusCode': 400,
-                        'headers': headers,
-                        'body': json.dumps({'error': f'Missing required field: {field}'})
-                    }
-            
-            # Create book entity
-            book = Book(
-                book_id=None,  # Will be generated
-                title=body['title'],
-                author=body['author'],
-                isbn=body['isbn'],
-                publisher=body.get('publisher', ''),
-                publication_year=body.get('publication_year'),
-                genre=body.get('genre', '')
-            )
-            
-            # Save book
-            saved_book = book_repo.save(book)
-            
-            return {
-                'statusCode': 201,
-                'headers': headers,
-                'body': json.dumps(saved_book.to_dict())
+            response_body = {
+                'books': [book.dict() for book in books],
+                'nextKey': next_key
             }
-        
+            
+        elif path == '/books' and http_method == 'POST':
+            body = json.loads(event['body'])
+            request = CreateBookRequest(**body)
+            book = await book_service.create_book(request)
+            response_body = book.dict()
+            
+        elif path.startswith('/books/') and http_method == 'GET':
+            book_id = path.split('/')[-1]
+            book = await book_service.get_book(book_id)
+            if not book:
+                return {
+                    'statusCode': 404,
+                    'headers': headers,
+                    'body': json.dumps({'error': 'Book not found'})
+                }
+            response_body = book.dict()
+            
+        elif path == '/search' and http_method == 'GET':
+            query = query_params.get('q', '')
+            limit = int(query_params.get('limit', 10))
+            
+            if not query:
+                return {
+                    'statusCode': 400,
+                    'headers': headers,
+                    'body': json.dumps({'error': 'Query parameter q is required'})
+                }
+            
+            books = await book_service.search_books(query, limit)
+            response_body = {'books': [book.dict() for book in books]}
+            
+        elif path == '/autocomplete' and http_method == 'GET':
+            query = query_params.get('q', '')
+            search_type = query_params.get('type', 'book')
+            limit = int(query_params.get('limit', 5))
+            
+            if not query:
+                return {
+                    'statusCode': 400,
+                    'headers': headers,
+                    'body': json.dumps({'error': 'Query parameter q is required'})
+                }
+            
+            if search_type == 'book':
+                results = await book_service.autocomplete_books(query, limit)
+                response_body = {'results': results}
+            else:
+                return {
+                    'statusCode': 400,
+                    'headers': headers,
+                    'body': json.dumps({'error': 'Invalid type parameter'})
+                }
         else:
             return {
-                'statusCode': 405,
+                'statusCode': 404,
                 'headers': headers,
-                'body': json.dumps({'error': 'Method not allowed'})
+                'body': json.dumps({'error': 'Not found'})
             }
-    
-    except json.JSONDecodeError:
+        
         return {
-            'statusCode': 400,
+            'statusCode': 200,
             'headers': headers,
-            'body': json.dumps({'error': 'Invalid JSON in request body'})
+            'body': json.dumps(response_body, default=str)
         }
-    
+        
     except Exception as e:
-        print(f"Error in books_handler: {str(e)}")
         return {
             'statusCode': 500,
             'headers': headers,
-            'body': json.dumps({'error': 'Internal server error'})
+            'body': json.dumps({'error': str(e)})
         }

@@ -1,37 +1,31 @@
 #!/bin/bash
 
-# Test Runner Script
-# Usage: ./scripts/test.sh [unit|integration|all]
-
 set -e
 
-TEST_TYPE=${1:-all}
+echo "🧪 Running Library Management System Tests"
+echo "=========================================="
 
-echo "🧪 Running tests in Docker environment..."
+# Build and run tests in Docker
+echo "Building test environment..."
+docker-compose build test
 
-case $TEST_TYPE in
-    unit)
-        echo "📋 Running unit tests only..."
-        docker build -f Dockerfile.test -t lms-test .
-        docker run --rm lms-test pytest tests/unit/ -v --cov=src
-        ;;
-        
-    integration)
-        echo "🔗 Running integration tests only..."
-        docker build -f Dockerfile.test -t lms-test .
-        docker run --rm lms-test pytest tests/integration/ -v --cov=src
-        ;;
-        
-    all)
-        echo "🎯 Running all tests..."
-        docker build -f Dockerfile.test -t lms-test .
-        docker run --rm lms-test pytest tests/ -v --cov=src --cov-report=html
-        ;;
-        
-    *)
-        echo "Usage: $0 [unit|integration|all]"
-        exit 1
-        ;;
-esac
+echo ""
+echo "Running unit tests with coverage..."
+docker-compose run --rm test
 
-echo "✅ Tests completed!"
+# Check if coverage report was generated
+if [ -d "htmlcov" ]; then
+    echo ""
+    echo "✅ Coverage report generated in htmlcov/ directory"
+    echo "📊 Open htmlcov/index.html in your browser to view detailed coverage"
+else
+    echo "⚠️  Coverage report not generated"
+fi
+
+echo ""
+echo "🎉 Tests completed!"
+echo ""
+echo "Next steps:"
+echo "1. Review test results and coverage report"
+echo "2. Fix any failing tests"
+echo "3. If all tests pass, proceed with deployment using ./scripts/deploy.sh"
