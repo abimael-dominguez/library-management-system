@@ -21,16 +21,16 @@ def create_directory_structure():
             "__init__.py"
         ],
         
-        # Driven Layer - Infrastructure adapters
-        "src/driven": [
+        # Infrastructure Layer - Infrastructure adapters
+        "src/infrastructure": [
             "dynamodb",
             "aws_services",
             "external_apis",
             "__init__.py"
         ],
         
-        # Design Layer - Application services, use cases, API handlers
-        "src/design": [
+        # Application Layer - Application services, use cases, API handlers
+        "src/application": [
             "use_cases",
             "dtos",
             "validators",
@@ -158,12 +158,12 @@ class ValidationError(LMSException):
 - **repositories/**: Abstract repository interfaces
 - **services/**: Domain services for business logic
 
-#### Driven Layer (`src/driven/`)
+#### Infrastructure Layer (`src/infrastructure/`)
 - **dynamodb/**: DynamoDB repository implementations
 - **aws_services/**: AWS SDK integrations
 - **external_apis/**: External service adapters
 
-#### Design Layer (`src/design/`)
+#### Application Layer (`src/application/`)
 - **use_cases/**: Application use cases (CreateLoan, ReturnBook)
 - **dtos/**: Data Transfer Objects for API
 - **validators/**: Pydantic validators
@@ -180,8 +180,8 @@ class ValidationError(LMSException):
 ### Development Workflow
 1. Define domain entities and value objects
 2. Create repository interfaces in domain
-3. Implement repositories in driven layer
-4. Create use cases in design layer
+3. Implement repositories in infrastructure layer
+4. Create use cases in application layer
 5. Implement Lambda handlers
 6. Deploy with CloudFormation/SAM
 """,

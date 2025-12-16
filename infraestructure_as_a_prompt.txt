@@ -33,9 +33,9 @@ Scope & Requirements:
 - Provide a scaffolder (scripts or documented steps) to generate the project structure.
 - Organize code into clear layers with directories named to reflect DDD:
   - domain: Entities, value objects, domain services, aggregates, repositories (interfaces).
-  - infraestructure: Infrastructure adapters (DynamoDB repositories, external services, AWS SDK integrations).
+  - infrastructure: Infrastructure adapters (DynamoDB repositories, external services, AWS SDK integrations).
   - application: Application services/use-cases, DTOs, validators, API handlers, and composition roots (DI wiring).
-- Place Lambda handlers within appropriate layer folders (usually in design for API handlers calling domain services, with driven for infra implementations).
+- Place Lambda handlers within appropriate layer folders (usually in application for API handlers calling domain services, with driven for infra implementations).
 
 3) Frontend
 - Use Tabler (Repo 2) as design reference for UI components and layout.
