@@ -1,0 +1,49 @@
+# SAM configuration file for LMS deployment
+
+[default]
+[default.global]
+[default.global.parameters]
+stack_name = "lms-serverless"
+s3_bucket = ""  # Will be auto-created by SAM
+s3_prefix = "lms-serverless"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+image_repositories = []
+
+[default.build]
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.deploy]
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+fail_on_empty_changeset = false
+stack_name = "lms-serverless"
+s3_bucket = ""  # Will be auto-created by SAM
+s3_prefix = "lms-serverless"
+region = "us-east-1"
+image_repositories = []
+parameter_overrides = "Environment=dev BucketName=lms-static-data"
+
+[prod]
+[prod.global]
+[prod.global.parameters]
+stack_name = "lms-serverless-prod"
+s3_bucket = ""
+s3_prefix = "lms-serverless-prod"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = false
+
+[prod.deploy]
+[prod.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+fail_on_empty_changeset = false
+stack_name = "lms-serverless-prod"
+parameter_overrides = "Environment=prod BucketName=lms-static-data"

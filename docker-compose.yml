@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # DynamoDB Local for testing
+  dynamodb-local:
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    image: "amazon/dynamodb-local:latest"
+    container_name: lms-dynamodb-local
+    ports:
+      - "8000:8000"
+    volumes:
+      - "./local/dynamodb:/home/dynamodblocal/data"
+    working_dir: /home/dynamodblocal
+    environment:
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+      - AWS_DEFAULT_REGION=us-east-1
+    networks:
+      - lms_network
+
+  # Note: Run SAM local from host machine:
+  # sam local start-api --docker-network lms_network --parameter-overrides 'Environment=local'
+  # This connects to DynamoDB Local running in this network
+
+  # Frontend development server (optional)
+  frontend:
+    image: nginx:alpine
+    container_name: lms-frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - "./frontend:/usr/share/nginx/html:ro"
+    depends_on:
+      - sam-local
+    networks:
+      - lms_network
+
+volumes:
+  dynamodb-data:
+
+networks:
+  lms_network:
+    driver: bridge
