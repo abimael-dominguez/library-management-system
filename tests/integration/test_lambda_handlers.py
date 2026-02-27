@@ -3,8 +3,8 @@ import json
 import os
 from unittest.mock import patch, AsyncMock, MagicMock
 
-from src.application.lambda_handlers.books_handler import async_handler as books_handler
-from src.application.lambda_handlers.loans_handler import async_handler as loans_handler
+from application.lambda_handlers.books_handler import async_handler as books_handler
+from application.lambda_handlers.loans_handler import async_handler as loans_handler
 
 
 @pytest.mark.asyncio
@@ -15,14 +15,14 @@ async def test_books_handler_list_books():
         'queryStringParameters': {'limit': '10'}
     }
     
-    with patch('src.application.lambda_handlers.books_handler.DynamoBookRepository') as mock_book_repo, \
-         patch('src.application.lambda_handlers.books_handler.DynamoBookCopyRepository') as mock_copy_repo:
+    with patch('application.lambda_handlers.books_handler.DynamoBookRepository') as mock_book_repo, \
+         patch('application.lambda_handlers.books_handler.DynamoBookCopyRepository') as mock_copy_repo:
         
         # Mock the service response
         mock_service = AsyncMock()
         mock_service.list_books.return_value = ([], None)
         
-        with patch('src.application.lambda_handlers.books_handler.BookService', return_value=mock_service):
+        with patch('application.lambda_handlers.books_handler.BookService', return_value=mock_service):
             response = await books_handler(event, {})
         
         assert response['statusCode'] == 200
@@ -45,8 +45,8 @@ async def test_books_handler_create_book():
     
     # Mock environment variables
     with patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'}):
-        with patch('src.application.lambda_handlers.books_handler.DynamoBookRepository') as mock_book_repo, \
-             patch('src.application.lambda_handlers.books_handler.DynamoBookCopyRepository') as mock_copy_repo:
+        with patch('application.lambda_handlers.books_handler.DynamoBookRepository') as mock_book_repo, \
+             patch('application.lambda_handlers.books_handler.DynamoBookCopyRepository') as mock_copy_repo:
             
             # Mock the service response
             mock_service = AsyncMock()
@@ -58,7 +58,7 @@ async def test_books_handler_create_book():
             }
             mock_service.create_book.return_value = mock_book_response
             
-            with patch('src.application.lambda_handlers.books_handler.BookService', return_value=mock_service):
+            with patch('application.lambda_handlers.books_handler.BookService', return_value=mock_service):
                 response = await books_handler(event, {})
             
             assert response['statusCode'] == 200
@@ -74,16 +74,16 @@ async def test_books_handler_search():
         'queryStringParameters': {'q': 'python', 'limit': '5'}
     }
     
-    with patch('src.application.lambda_handlers.books_handler.DynamoBookRepository') as mock_book_repo, \
-         patch('src.application.lambda_handlers.books_handler.DynamoBookCopyRepository') as mock_copy_repo:
+    with patch('application.lambda_handlers.books_handler.DynamoBookRepository') as mock_book_repo, \
+         patch('application.lambda_handlers.books_handler.DynamoBookCopyRepository') as mock_copy_repo:
         
         # Mock the service response
         mock_service = AsyncMock()
-        mock_book = AsyncMock()
+        mock_book = MagicMock()
         mock_book.dict.return_value = {'title': 'Python Programming', 'author': 'John Doe'}
         mock_service.search_books.return_value = [mock_book]
         
-        with patch('src.application.lambda_handlers.books_handler.BookService', return_value=mock_service):
+        with patch('application.lambda_handlers.books_handler.BookService', return_value=mock_service):
             response = await books_handler(event, {})
         
         assert response['statusCode'] == 200
@@ -100,8 +100,8 @@ async def test_books_handler_autocomplete():
         'queryStringParameters': {'q': 'py', 'type': 'book', 'limit': '3'}
     }
     
-    with patch('src.application.lambda_handlers.books_handler.DynamoBookRepository') as mock_book_repo, \
-         patch('src.application.lambda_handlers.books_handler.DynamoBookCopyRepository') as mock_copy_repo:
+    with patch('application.lambda_handlers.books_handler.DynamoBookRepository') as mock_book_repo, \
+         patch('application.lambda_handlers.books_handler.DynamoBookCopyRepository') as mock_copy_repo:
         
         # Mock the service response
         mock_service = AsyncMock()
@@ -109,7 +109,7 @@ async def test_books_handler_autocomplete():
             {'id': '1', 'title': 'Python Programming', 'author': 'John Doe'}
         ]
         
-        with patch('src.application.lambda_handlers.books_handler.BookService', return_value=mock_service):
+        with patch('application.lambda_handlers.books_handler.BookService', return_value=mock_service):
             response = await books_handler(event, {})
         
         assert response['statusCode'] == 200
@@ -133,8 +133,8 @@ async def test_loans_handler_create_loan():
     }
     
     with patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'}):
-        with patch('src.application.lambda_handlers.loans_handler.DynamoLoanRepository') as mock_loan_repo, \
-             patch('src.application.lambda_handlers.loans_handler.DynamoBookCopyRepository') as mock_copy_repo:
+        with patch('application.lambda_handlers.loans_handler.DynamoLoanRepository') as mock_loan_repo, \
+             patch('application.lambda_handlers.loans_handler.DynamoBookCopyRepository') as mock_copy_repo:
             
             # Mock the service response
             mock_service = AsyncMock()
@@ -147,7 +147,7 @@ async def test_loans_handler_create_loan():
             }
             mock_service.create_loan.return_value = mock_loan_response
             
-            with patch('src.application.lambda_handlers.loans_handler.LoanService', return_value=mock_service):
+            with patch('application.lambda_handlers.loans_handler.LoanService', return_value=mock_service):
                 response = await loans_handler(event, {})
             
             assert response['statusCode'] == 200
@@ -165,8 +165,8 @@ async def test_loans_handler_return_loan():
     }
     
     with patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'}):
-        with patch('src.application.lambda_handlers.loans_handler.DynamoLoanRepository') as mock_loan_repo, \
-             patch('src.application.lambda_handlers.loans_handler.DynamoBookCopyRepository') as mock_copy_repo:
+        with patch('application.lambda_handlers.loans_handler.DynamoLoanRepository') as mock_loan_repo, \
+             patch('application.lambda_handlers.loans_handler.DynamoBookCopyRepository') as mock_copy_repo:
             
             # Mock the service response
             mock_service = AsyncMock()
@@ -177,7 +177,7 @@ async def test_loans_handler_return_loan():
             }
             mock_service.return_loan.return_value = mock_loan_response
             
-            with patch('src.application.lambda_handlers.loans_handler.LoanService', return_value=mock_service):
+            with patch('application.lambda_handlers.loans_handler.LoanService', return_value=mock_service):
                 response = await loans_handler(event, {})
             
             assert response['statusCode'] == 200

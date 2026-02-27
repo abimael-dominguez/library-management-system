@@ -20,7 +20,7 @@ COPY tests/ tests/
 COPY pytest.ini .
 
 # Set Python path
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app:/app/src
 
 # Default command to run tests
 CMD ["pytest", "-v", "--cov=src", "--cov-report=term-missing", "--cov-report=html"]

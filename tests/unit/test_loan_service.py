@@ -2,10 +2,10 @@ import pytest
 from unittest.mock import AsyncMock, Mock
 from datetime import datetime, date, timedelta
 
-from src.domain.entities.loan import Loan, LoanStatus
-from src.domain.entities.book import BookCopy, BookStatus
-from src.application.use_cases.loan_service import LoanService
-from src.application.dto.loan_dto import CreateLoanRequest, ReturnLoanRequest
+from domain.entities.loan import Loan, LoanStatus
+from domain.entities.book import BookCopy, BookStatus
+from application.use_cases.loan_service import LoanService
+from application.dto.loan_dto import CreateLoanRequest, ReturnLoanRequest
 
 
 class MockLoanRepository:
@@ -77,7 +77,7 @@ async def test_create_loan_success(loan_service):
     assert result.book_copy_id == "book-1-001"
     assert result.member_id == "member-1"
     assert result.employee_id == "employee-1"
-    assert result.status == "in_progress"
+    assert result.status == "Prestado"
     assert result.loan_date == date.today()
     
     # Check that book copy status was updated

@@ -2,8 +2,8 @@ import pytest
 from pydantic import ValidationError
 from datetime import date
 
-from src.application.dto.book_dto import CreateBookRequest, SearchBooksRequest, AutocompleteRequest
-from src.application.dto.loan_dto import CreateLoanRequest, ReturnLoanRequest
+from application.dto.book_dto import CreateBookRequest, SearchBooksRequest, AutocompleteRequest
+from application.dto.loan_dto import CreateLoanRequest, ReturnLoanRequest
 
 
 def test_create_book_request_valid():

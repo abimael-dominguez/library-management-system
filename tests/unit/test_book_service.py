@@ -3,9 +3,9 @@ from unittest.mock import AsyncMock, Mock
 from datetime import datetime
 import uuid
 
-from src.domain.entities.book import Book, BookCopy, BookStatus
-from src.application.use_cases.book_service import BookService
-from src.application.dto.book_dto import CreateBookRequest
+from domain.entities.book import Book, BookCopy, BookStatus
+from application.use_cases.book_service import BookService
+from application.dto.book_dto import CreateBookRequest
 
 
 class MockBookRepository:

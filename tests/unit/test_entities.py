@@ -1,8 +1,8 @@
 import pytest
-from datetime import datetime, date
-from src.domain.entities.book import Book, BookCopy, BookStatus
-from src.domain.entities.member import Member, MemberStatus
-from src.domain.entities.loan import Loan, LoanStatus
+from datetime import datetime, date, timedelta
+from domain.entities.book import Book, BookCopy, BookStatus
+from domain.entities.member import Member, MemberStatus
+from domain.entities.loan import Loan, LoanStatus
 
 
 def test_book_entity():
@@ -86,7 +86,7 @@ def test_loan_is_overdue():
         member_id="member-1",
         employee_id=None,
         loan_date=date.today(),
-        due_date=date(2025, 12, 31),  # Future date
+        due_date=date.today() + timedelta(days=30),
         status=LoanStatus.IN_PROGRESS
     )
     assert not loan.is_overdue

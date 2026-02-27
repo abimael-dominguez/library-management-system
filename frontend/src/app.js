@@ -1,5 +1,5 @@
 // Configuration
-const API_BASE_URL = 'https://7dw5nfrm5h.execute-api.us-east-1.amazonaws.com/dev';
+const API_BASE_URL = 'https://6dfvt1hpwe.execute-api.us-east-1.amazonaws.com/dev';
 
 const PALETTES = {
     indigo: {

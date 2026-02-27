@@ -79,7 +79,7 @@ aws lambda get-function --profile $PROFILE --region $REGION --function-name $FUN
 echo ""
 echo "Probando invocación..."
 echo '{"httpMethod":"GET","path":"/books","queryStringParameters":{"limit":"3"}}' > /tmp/lambda-payload.json
-STATUS=$(aws lambda invoke --profile $PROFILE --region $REGION --function-name $FUNCTION_NAME --payload file:///tmp/lambda-payload.json /tmp/lambda-test.json --query 'StatusCode' --output text)
+STATUS=$(aws lambda invoke --profile $PROFILE --region $REGION --function-name $FUNCTION_NAME --payload fileb:///tmp/lambda-payload.json /tmp/lambda-test.json --query 'StatusCode' --output text)
 echo "Status: $STATUS"
 if [ -f /tmp/lambda-test.json ]; then
     BOOK_COUNT=$(cat /tmp/lambda-test.json | jq -r '.body' | jq '.books | length' 2>/dev/null || echo "0")
