@@ -1,0 +1,156 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Single Ubuntu EC2 instance (Free Tier friendly) in a public subnet with SSH access.
+  Creates its own VPC + Internet Gateway + route to the Internet.
+
+Parameters:
+  # Recommendation: set ProjectName as your CloudFormation Stack Name.
+  ProjectName:
+    Type: String
+    Default: ec2-ubuntu-ssh
+    Description: Prefix used for resource Name tags.
+
+  UbuntuAmiId:
+    Type: AWS::EC2::Image::Id
+    Default: ami-0b6c6ebed2801a5cb  # Canonical, Ubuntu, 24.04, amd64 noble image - 2025-12-12
+    Description: Ubuntu AMI ID to use for the instance.
+
+  UbuntuInstanceType:
+    Type: String
+    Default: t3.small
+    Description: Instance type (free-tier-friendly).
+
+  UbuntuKeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: ec2-ubuntu-ssh-key-pair  # Create the key pair in the same region before deploying the stack
+    Description: Existing EC2 KeyPair name to enable SSH.
+
+  SshAllowedCidr:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: CIDR allowed to SSH to the instance (recommend your public IP /32).
+
+  AvailabilityZone:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: us-east-1a
+    Description: "Availability Zone for the subnet/instance (choose one that supports the instance type)."
+
+  VpcCidr:
+    Type: String
+    Default: 10.0.0.0/16
+
+  PublicSubnetCidr:
+    Type: String
+    Default: 10.0.1.0/24
+
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-vpc'
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-igw'
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Ref AvailabilityZone
+      CidrBlock: !Ref PublicSubnetCidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-public-subnet'
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-public-rt'
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  SshSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH from SshAllowedCidr
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SshAllowedCidr
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-sg'
+
+  Ec2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref UbuntuAmiId
+      InstanceType: !Ref UbuntuInstanceType
+      KeyName: !Ref UbuntuKeyName
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds:
+        - !Ref SshSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-instance'
+
+Outputs:
+  StackName:
+    Description: CloudFormation stack name
+    Value: !Ref AWS::StackName
+
+  InstanceId:
+    Description: EC2 instance id
+    Value: !Ref Ec2Instance
+
+  PublicIp:
+    Description: Public IPv4 address
+    Value: !GetAtt Ec2Instance.PublicIp
+
+  PublicDnsName:
+    Description: Public DNS name
+    Value: !GetAtt Ec2Instance.PublicDnsName
+
+  SecurityGroupId:
+    Description: Security group id
+    Value: !Ref SshSecurityGroup
+
+  SshCommand:
+    Description: SSH command template for Ubuntu (replace the key path)
+    Value: !Sub 'ssh -i <path-to-private-key.pem> ubuntu@${Ec2Instance.PublicDnsName}'
