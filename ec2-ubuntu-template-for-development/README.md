@@ -138,6 +138,31 @@ Other Optional commands
       aws sso login --profile <your-profile>
 ```
 
+## Aditional Packages
+
+### Zip
+```bash
+  sudo apt-get upgrade
+  sudo apt update
+  sudo apt install -y zip unzip curl
+  ```
+
+### venv
+To create python virtual environments you will need `venv` Check the version of python you have is compatible with venv.
+
+```bash
+sudo apt update
+sudo apt install -y "python$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')-venv"
+```
+
+If the previous does not work you can try:
+  ```bash
+  PY_MM=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+  sudo apt update
+  sudo apt install -y "python${PY_MM}-venv" || sudo apt install -y python3-venv
+  ```
+
+
 ## Verification
 
 - System dependencies for local development (run once):
@@ -147,18 +172,3 @@ Other Optional commands
 
   # if the Docker daemon is not running:
   sudo systemctl start docker
-
-  sudo apt-get upgrade
-  sudo apt update
-  sudo apt install -y zip unzip curl
-
-  PY_MM=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-  sudo apt update
-  sudo apt install -y "python${PY_MM}-venv" || sudo apt install -y python3-venv
-  ```
-  For a tighter command, you can substitute the last block with:
-  ```bash
-  sudo apt update
-  sudo apt install -y "python$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')-venv"
-  ```
-
