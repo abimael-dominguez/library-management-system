@@ -1,7 +1,60 @@
 # Ubuntu EC2 Setup: Docker, Docker Compose, and AWS CLI
 
+
+## Prerequisites
+
+
+Open the AWS Console, go to the EC2 service, and create a key pair:
+
+```bash
+ec2-ubuntu-ssh-key-pair
+```
+
+Download the .csv file; you will use it later to connect to the EC2 instance from your local computer.
+
+- Open the ```ec2-ubuntu-template-for-development/ec2-ubuntu-ssh.yml``` and veryfy the parameters are valid and updated.
+
+- Deploy the stack using the AWS Console. Recommendation: set ```ProjectName``` as your CloudFormation Stack Name. You can see the ```ProjectName``` in ```ec2-ubuntu-ssh.yml```
+
+## SSH Setup
+
+### Secure SSH permissions
+
+1. Apply the required permissions so SSH and the private key stay locked down:
+   ```bash
+   chmod 400 /path/to/key-pair-file.pem
+   chmod 700 ~/.ssh         # optional
+   chmod 600 ~/.ssh/config  # optional
+   ```
+2. Confirm the resulting bits match expectations:
+   ```
+   ls -ld </path/to/key-pair-file.pem>  -> -r--------
+   ls -ld ~/.ssh                        -> drwx------
+   ls -ld ~/.ssh/config                 -> -rw-------
+   ```
+
+### VS Code Remote SSH
+
+1. Install the **Remote - SSH** extension in VS Code.
+2. Open the command palette again (`Ctrl+P`) and run `Remote-SSH: Connect to Host…`.
+  - Configure Host --> `/home/<user>/.ssh/config`
+3. It will open the `~/.ssh/config ` file; paste the host definition below:
+
+```bash
+Host <EC2 Name>
+    HostName <EC2 public DNS>
+    User <user> # ubuntu
+    IdentityFile </path/to/key-pair-file.pem>
+```
+
+After updating the parameters save the file.
+
+4. Open the command palette again (`Ctrl+P`) and run `Remote-SSH: Connect to Host…`.
+  - Follow the prompts to accept the host key and open a remote window.
+
+
+## Install Docker Engine and Docker Compose Plugin (in the EC2)
 > Verified working on: 2026-02-27
-## Install Docker Engine and Docker Compose Plugin
 
 ```bash
 set -e
@@ -46,7 +99,7 @@ docker compose version
 docker run --rm hello-world
 ```
 
-## Install AWS CLI v2
+## Install AWS CLI v2 (in the EC2)
 
 ```bash
 set -e
@@ -109,36 +162,3 @@ Other Optional commands
   sudo apt install -y "python$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')-venv"
   ```
 
-## SSH Setup
-
-### Secure SSH permissions
-
-1. Apply the required permissions so SSH and the private key stay locked down:
-   ```bash
-   chmod 700 ~/.ssh
-   chmod 600 ~/.ssh/config
-   chmod 400 /home/abimael/Desktop/secrets/ec2/account_894064921954/ec2-ubuntu-ssh-key-pair.pem
-   ```
-2. Confirm the resulting bits match expectations:
-   ```
-   ~/.ssh -> drwx------
-   ~/.ssh/config -> -rw-------
-   /home/abimael/Desktop/secrets/ec2/account_894064921954/ec2-ubuntu-ssh-key-pair.pem -> -r--------
-   ```
-
-### VS Code Remote SSH
-
-1. Install the **Remote - SSH** extension in VS Code.
-2. Open the command palette again (`Ctrl+P`) and run `Remote-SSH: Connect to Host…`.
-  - Configure Host --> /home/<user>/.ssh/config
-3. When prompted, select or paste the host definition below.
-
-```text
-Host <EC2 Name>
-    HostName <EC2 public DNS>
-    User <user> # ubuntu
-    IdentityFile </path/to/file.pem>
-```
-
-5. Open the command palette again (`Ctrl+P`) and run `Remote-SSH: Connect to Host…`.
-  - Follow the prompts to accept the host key and open a remote window.
