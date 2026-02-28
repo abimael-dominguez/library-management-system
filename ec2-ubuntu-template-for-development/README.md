@@ -190,3 +190,23 @@ If the previous does not work you can try:
   Docker CLI talks to the Docker daemon through `/var/run/docker.sock`.
   That socket is commonly owned by `root:docker` with `srw-rw----`, so only `root` and users in the `docker` group can access it.
   After adding `ubuntu` to `docker` and reloading groups with `newgrp docker`, `docker ps` can connect without `sudo`.
+
+
+## Important final steps
+
+- Run this command to reboot the ec2 and reconnect to the instance. In this way the changes will be applied permanently (`sudo usermod -aG docker ubuntu`):
+
+```bash
+sudo reboot
+
+# ... reconnect to the EC2 instance
+
+# Check Service status (most direct)
+sudo systemctl status docker
+
+# if the Docker daemon is not running:
+sudo systemctl start docker
+
+# Finally check:
+docker ps
+```
