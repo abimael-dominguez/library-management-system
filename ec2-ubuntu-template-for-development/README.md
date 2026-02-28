@@ -87,7 +87,7 @@ sudo systemctl enable --now containerd docker.socket docker
 sudo systemctl restart docker
 
 # 6) Optional: run docker without sudo
-sudo usermod -aG docker $USER
+sudo usermod -aG docker ubuntu
 newgrp docker
 
 # If daemon is not running:
@@ -165,10 +165,28 @@ If the previous does not work you can try:
 
 ## Verification
 
-- System dependencies for local development (run once):
+- Verify group membership before and after:
   ```bash
-  sudo usermod -aG docker $USER
+  # Before
+  id -nG
+  # Expected Output: ubuntu adm cdrom sudo dip lxd
+
+  # Apply docker group membership
+  sudo usermod -aG docker ubuntu
   newgrp docker
 
-  # if the Docker daemon is not running:
+  # After
+  id -nG
+  # Expected Output: docker adm cdrom sudo dip lxd ubuntu
+
+  # finally if the Docker daemon is not running:
   sudo systemctl start docker
+
+  # Check
+  docker ps
+  ```
+
+- Why this helps `docker ps`:
+  Docker CLI talks to the Docker daemon through `/var/run/docker.sock`.
+  That socket is commonly owned by `root:docker` with `srw-rw----`, so only `root` and users in the `docker` group can access it.
+  After adding `ubuntu` to `docker` and reloading groups with `newgrp docker`, `docker ps` can connect without `sudo`.
