@@ -73,6 +73,12 @@ aws lambda create-function \
     --no-cli-pager > /dev/null
 
 echo "✅ Lambda function creada: $FUNCTION_NAME"
+echo "⏳ Esperando a que Lambda esté activa..."
+aws lambda wait function-active \
+    --profile $PROFILE \
+    --region $REGION \
+    --function-name $FUNCTION_NAME
+echo "✅ Lambda activa"
 echo ""
 echo "🧪 Verificando Lambda..."
 aws lambda get-function --profile $PROFILE --region $REGION --function-name $FUNCTION_NAME --query 'Configuration.[FunctionName,Runtime,State]' --output table
