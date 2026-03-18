@@ -1,231 +1,267 @@
-# Serverless Library Management System (LMS)
+# Library Management System
 
 [![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
-[![AWS SAM](https://img.shields.io/badge/AWS-SAM-orange.svg)](https://aws.amazon.com/serverless/sam/)
-[![DynamoDB](https://img.shields.io/badge/AWS-DynamoDB-blue.svg)](https://aws.amazon.com/dynamodb/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![FastAPI](https://img.shields.io/badge/fastapi-local--first-009688.svg)](https://fastapi.tiangolo.com/)
+[![Database](https://img.shields.io/badge/database-SQLite%20%7C%20PostgreSQL-336791.svg)](https://www.postgresql.org/)
 
-A cost-optimized serverless Library Management System built with AWS Lambda, DynamoDB, and S3, following Clean Architecture principles.
+Local-first migration of the library backend from the old serverless DynamoDB design to a transactional relational design using FastAPI and SQLAlchemy.
 
-## 🏗️ Architecture
+This phase is focused on manual local testing only. Cloud deployment comes later.
 
-- **Frontend**: Static website hosted on S3
-- **Backend**: AWS Lambda functions with API Gateway
-- **Database**: DynamoDB with single-table design
-- **Infrastructure**: AWS SAM/CloudFormation
-- **Cost**: ~$0.50/month for 500 items, 1000 requests/week
+## Current Architecture
 
-## 🚀 Quick Start
+### Local phase
+- Frontend: static files in `frontend/src`
+- Backend API: FastAPI app assembled from `src/application`, `src/domain`, and `src/infrastructure`
+- Local database: SQLite file at `data/local/library.db`
+- Optional later database: PostgreSQL by changing only `DATABASE_URL`
 
-### Prerequisites
-- AWS CLI configured with `immersion` profile
-- SAM CLI installed
-- Python 3.11+
+### Important principle
+- The frontend never writes directly to the database.
+- All writes go through the FastAPI backend.
+- Loan and return operations are handled as backend transactions.
 
-### Deploy to AWS
-```bash
-# Clone and setup
-git clone <repository-url>
-cd library-management-system
+## What Works In This Phase
 
-# Deploy to development
-./scripts/deploy.sh dev
+- `GET /health`
+- `GET /books`
+- `POST /books`
+- `GET /books/{book_id}`
+- `GET /search?q=...`
+- `GET /autocomplete?q=...&type=member`
+- `GET /members`
+- `POST /members`
+- `GET /employees`
+- `POST /employees`
+- `GET /loans`
+- `POST /loans`
+- `GET /loans/{loan_id}`
+- `PUT /loans/{loan_id}/return`
 
-# Seed database
-python local/scripts/csv_to_dynamodb.py
+## Local Run With Python
 
-# Get API URL from stack outputs
-aws cloudformation describe-stacks --profile immersion --stack-name lms-serverless --query 'Stacks[0].Outputs'
-```
+These commands work well in `bash` on macOS.
 
-### Local Development
-```bash
-# Start local environment
-docker-compose up -d
-
-# API available at: http://localhost:3000
-# Frontend at: http://localhost:8080
-# DynamoDB Local: http://localhost:8000
-```
-
-## 📁 Project Structure
-
-```
-library-management-system/
-├── src/                          # Source code
-│   ├── domain/                   # Domain layer (Clean Architecture)
-│   │   ├── entities/            # Domain entities
-│   │   └── repositories/        # Repository interfaces
-│   ├── infrastructure/          # Infrastructure layer
-│   │   └── dynamodb/           # DynamoDB implementations
-│   └── application/            # Application layer
-│       ├── use_cases/          # Business logic services
-│       └── lambda_handlers/    # Lambda function handlers
-├── docs/                       # Documentation
-├── scripts/                    # Deployment scripts
-├── layers/                     # Lambda layers
-├── local/                      # Local development tools
-├── template.yaml              # SAM template
-└── docker-compose.yml         # Local development environment
-```
-
-## 🎯 Features
-
-### Core Functionality
-- ✅ **Book Management**: CRUD operations for books and copies
-- ✅ **Member Management**: Library patron registration and management
-- ✅ **Loan System**: Book checkout and return workflow
-- ✅ **Ultra-fast Search**: <50ms autocomplete with single GSI
-- ✅ **Cost Optimized**: 96% cost reduction through smart design
-
-### Technical Features
-- ✅ **Clean Architecture**: Domain-driven design with clear layer separation
-- ✅ **Single Table Design**: DynamoDB optimization for cost and performance
-- ✅ **Serverless**: Pay-per-use with automatic scaling
-- ✅ **CORS Enabled**: Ready for frontend integration
-- ✅ **Type Safety**: Pydantic models for validation
-
-## 🔧 API Endpoints
-
-### Search & Autocomplete
-```bash
-GET /search?q=book&type=book&limit=10
-GET /autocomplete?q=har&type=book
-```
-
-### Books
-```bash
-GET /books                    # List books
-GET /books/{book_id}         # Get book details
-POST /books                  # Create book
-```
-
-### Members
-```bash
-GET /members                 # List members
-GET /members/{member_id}     # Get member details
-POST /members               # Create member
-```
-
-### Loans
-```bash
-GET /loans                   # List loans
-POST /loans                  # Create loan
-PUT /loans/{loan_id}/return  # Return book
-```
-
-## 💾 Database Design
-
-### DynamoDB Single Table
-- **Primary Key**: `pk` (partition key), `sk` (sort key)
-- **GSI1**: `gsi1pk`, `gsi1sk` for search operations
-- **Cost**: ~$0.001/month for 500 items
-
-### Entity Patterns
-```
-Book:     pk=BOOK#{id}     sk=METADATA
-Copy:     pk=BOOK#{id}     sk=COPY#{copy_id}
-Member:   pk=MEMBER#{id}   sk=METADATA
-Loan:     pk=LOAN#{id}     sk=METADATA
-Search:   gsi1pk=SEARCH#{type}  gsi1sk={searchable_text}
-```
-
-## 🚀 Deployment
-
-### Development Environment
-```bash
-./scripts/deploy.sh dev
-```
-
-### Production Environment
-```bash
-./scripts/deploy.sh prod
-```
-
-### Destroy Stack
-```bash
-./scripts/destroy.sh dev
-```
-
-See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed instructions.
-
-## 🧪 Testing
-
-### Local Testing
-```bash
-# Start local environment
-docker-compose up -d
-
-# Test API endpoints
-curl http://localhost:3000/search?q=book
-```
-
-### Unit Tests
-```bash
-# Install dev dependencies
-pip install pytest moto
-
-# Run tests
-pytest tests/
-```
-
-## 📊 Cost Analysis
-
-### Monthly Costs (500 items, 1000 requests/week)
-- **DynamoDB**: ~$0.001 (pay-per-request)
-- **Lambda**: ~$0.20 (1M free requests/month)
-- **API Gateway**: ~$0.25 (1M free requests/month)
-- **S3**: ~$0.05 (static hosting)
-- **Total**: ~$0.50/month
-
-### Cost Optimizations Applied
-- Single GSI instead of multiple indexes (96% reduction)
-- Batch operations for data loading
-- Shortened attribute names
-- Pay-per-request billing
-- Minimal Lambda memory allocation
-
-## 🔄 Data Migration
-
-### From PostgreSQL
-The system includes migration tools from the original PostgreSQL schema:
+### 1. Create and activate a virtual environment
 
 ```bash
-# Convert CSV data to DynamoDB format
-python local/scripts/csv_to_dynamodb.py
-
-# Batch upload to DynamoDB
-python local/scripts/batch_upload.py
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-## 📚 Documentation
+### 2. Set local environment variables
 
-- [Deployment Guide](docs/DEPLOYMENT.md)
-- [Architecture Overview](docs/architecture/)
-- [API Documentation](docs/api/)
-- [Database Schema](docs/database/)
+```bash
+cp .env.example .env
+export APP_ENV=local
+export DATABASE_URL=sqlite:///./data/local/library.db
+export AUTO_CREATE_DB=true
+export CORS_ORIGINS=http://localhost:8080,http://127.0.0.1:8080
+```
 
-## 🤝 Contributing
+### 3. Initialize demo data
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Commit changes: `git commit -m 'Add your feature'`
-4. Push to branch: `git push origin feature/your-feature`
-5. Open a Pull Request
+```bash
+python scripts/seed_local_db.py
+```
 
-## 📄 License
+### 4. Start the API
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+```bash
+uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+```
 
-## 🎯 Roadmap
+### 5. Start the frontend in another terminal
 
-- [ ] Frontend implementation with Tabler UI
-- [ ] Employee management system
-- [ ] Fine calculation system
-- [ ] Reservation system
-- [ ] Reporting dashboard
-- [ ] Multi-language support (EN/ES)
-- [ ] Mobile app integration
-- [ ] Advanced search filters
-- [ ] Email notifications
-- [ ] Audit logging
+```bash
+python3 -m http.server 8080 --directory frontend/src
+```
+
+### 6. Open the app
+
+- Frontend: [http://localhost:8080](http://localhost:8080)
+- API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Health check: [http://localhost:8000/health](http://localhost:8000/health)
+
+## Local Run With Docker
+
+### Start API and frontend
+
+```bash
+docker compose up --build api frontend
+```
+
+### Run tests in Docker
+
+```bash
+./scripts/test.sh
+```
+
+### Stop local containers
+
+```bash
+docker compose down
+```
+
+## Manual Smoke Test Flow
+
+### Option 1: Use the frontend
+1. Open `http://localhost:8080`
+2. Verify books load automatically
+3. Add a book
+4. Create a member
+5. Create an employee
+6. Create a loan from the UI
+7. Return the loan from the UI
+
+### Option 2: Use curl
+
+Create a member:
+
+```bash
+curl -X POST http://localhost:8000/members \
+  -H "Content-Type: application/json" \
+  -d '{
+    "first_name": "Elena",
+    "last_name": "Ruiz",
+    "email": "elena.ruiz@example.com"
+  }'
+```
+
+Create an employee:
+
+```bash
+curl -X POST http://localhost:8000/employees \
+  -H "Content-Type: application/json" \
+  -d '{
+    "first_name": "Marco",
+    "last_name": "Diaz",
+    "position": "Librarian"
+  }'
+```
+
+Create a book:
+
+```bash
+curl -X POST http://localhost:8000/books \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Domain-Driven Design",
+    "author": "Eric Evans",
+    "total_copies": 2
+  }'
+```
+
+List books:
+
+```bash
+curl http://localhost:8000/books
+```
+
+Create a loan:
+
+```bash
+curl -X POST http://localhost:8000/loans \
+  -H "Content-Type: application/json" \
+  -d '{
+    "book_copy_id": "REPLACE_WITH_COPY_ID",
+    "member_id": "REPLACE_WITH_MEMBER_ID",
+    "employee_id": "REPLACE_WITH_EMPLOYEE_ID",
+    "loan_date": "2026-03-18",
+    "due_date": "2026-04-08"
+  }'
+```
+
+Return a loan:
+
+```bash
+curl -X PUT http://localhost:8000/loans/REPLACE_WITH_LOAN_ID/return \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+## Test Strategy In This Phase
+
+- Unit tests: service and schema behavior
+- Functional tests: API endpoints with isolated SQLite
+- Frontend: manual browser verification against localhost API
+
+Run locally without Docker:
+
+```bash
+pytest tests/unit tests/functional
+```
+
+Run with Docker:
+
+```bash
+docker compose run --rm test
+```
+
+## Environment Variables
+
+These are the key variables that make the local and future cloud setup clean.
+
+| Variable | Local Value | Later Cloud Value |
+|---|---|---|
+| `APP_ENV` | `local` | `dev` or `prod` |
+| `DATABASE_URL` | `sqlite:///./data/local/library.db` | `postgresql+psycopg://...` |
+| `AUTO_CREATE_DB` | `true` | usually `false` once migrations are managed |
+| `CORS_ORIGINS` | local frontend URLs | CloudFront/custom domain URLs |
+
+This is the main professional switch point:
+- local uses SQLite
+- cloud will use PostgreSQL
+- the application code keeps the same API contract
+
+## Project Structure
+
+```text
+src/application/
+  dto/
+  use_cases/
+
+src/domain/
+  entities/
+  repositories/
+  exceptions.py
+
+src/infrastructure/
+  api.py
+  database.py
+  models.py
+  repositories/
+  seed.py
+
+src/main.py
+
+frontend/src/
+  index.html
+  app.js
+  styles.css
+
+tests/
+  unit/
+  functional/
+```
+
+## Notes For Phase 2
+
+Not implemented yet, but this local structure is already prepared for:
+- CloudFormation-based deployment
+- containerized FastAPI on ECS/Fargate
+- S3 + CloudFront for the frontend
+- PostgreSQL outside local SQLite by changing `DATABASE_URL`
+
+When we start phase 2, the database being remote instead of local will be indicated explicitly by environment variables and stack parameters, not hidden in code.
+
+## Legacy Serverless Reference
+
+The previous serverless code was moved out of the active source tree to keep the repo cleaner:
+
+- `tmp/serverless-legacy/`
+- `tmp/refactor-backup/`
+
+If we need the original AWS Lambda and DynamoDB implementation later, we can also consult the `serverless-project-tecgurus` branch.

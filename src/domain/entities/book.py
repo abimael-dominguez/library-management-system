@@ -1,14 +1,15 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Optional
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 
-class BookStatus(Enum):
-    AVAILABLE = "Disponible"
-    LOANED = "Prestado"
-    DAMAGED = "Dañado"
-    LOST = "Perdido"
+class BookCopyStatus(StrEnum):
+    AVAILABLE = "available"
+    LOANED = "loaned"
+    DAMAGED = "damaged"
+    LOST = "lost"
 
 
 @dataclass
@@ -16,21 +17,23 @@ class Book:
     book_id: str
     title: str
     author: str
-    isbn: Optional[str] = None
-    publisher: Optional[str] = None
-    publication_year: Optional[int] = None
-    genre: Optional[str] = None
-    pages: Optional[int] = None
+    isbn: str | None = None
+    publisher: str | None = None
+    publication_year: int | None = None
+    genre: str | None = None
+    pages: int | None = None
     max_loan_weeks: int = 3
     total_copies: int = 1
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    available_copies: int = 0
+    first_available_copy_id: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 @dataclass
 class BookCopy:
     book_copy_id: str
     book_id: str
-    status: BookStatus
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    status: BookCopyStatus
+    created_at: datetime | None = None
+    updated_at: datetime | None = None

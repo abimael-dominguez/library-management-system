@@ -1,13 +1,14 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Optional
-from datetime import datetime, date
-from enum import Enum
+from datetime import date, datetime
+from enum import StrEnum
 
 
-class LoanStatus(Enum):
-    IN_PROGRESS = "Prestado"
-    RETURNED = "Disponible"
-    OVERDUE = "Vencido"
+class LoanStatus(StrEnum):
+    IN_PROGRESS = "in_progress"
+    RETURNED = "returned"
+    OVERDUE = "overdue"
 
 
 @dataclass
@@ -15,16 +16,14 @@ class Loan:
     loan_id: str
     book_copy_id: str
     member_id: str
-    employee_id: Optional[str]
+    employee_id: str | None
     loan_date: date
     due_date: date
-    actual_return_date: Optional[date] = None
+    actual_return_date: date | None = None
     status: LoanStatus = LoanStatus.IN_PROGRESS
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     @property
     def is_overdue(self) -> bool:
-        if self.status == LoanStatus.RETURNED:
-            return False
-        return date.today() > self.due_date
+        return self.status == LoanStatus.IN_PROGRESS and self.due_date < date.today()

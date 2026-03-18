@@ -1,49 +1,49 @@
-from typing import List, Optional
-import uuid
-from datetime import datetime, date
+from __future__ import annotations
+
+from datetime import date
+from uuid import uuid4
 
 from ...domain.entities.member import Member, MemberStatus
+from ...domain.exceptions import DomainError
 from ...domain.repositories.member_repository import MemberRepository
-from ..dto.member_dto import CreateMemberRequest, MemberResponse
+from ..dto.member_dto import MemberAutocompleteResult, MemberCreateRequest
 
 
 class MemberService:
-    def __init__(self, member_repo: MemberRepository):
+    def __init__(self, member_repo: MemberRepository, commit, rollback):
         self.member_repo = member_repo
+        self.commit = commit
+        self.rollback = rollback
 
-    async def create_member(self, request: CreateMemberRequest) -> MemberResponse:
-        member_id = str(uuid.uuid4())
-        now = datetime.utcnow()
-        
+    def list_members(self, limit: int = 50) -> list[Member]:
+        return self.member_repo.list_members(limit)
+
+    def get_member(self, member_id: str) -> Member | None:
+        return self.member_repo.get_member_by_id(member_id)
+
+    def autocomplete_members(self, query: str, limit: int = 5) -> list[MemberAutocompleteResult]:
+        members = self.member_repo.search_members(query, limit)
+        return [MemberAutocompleteResult(id=member.member_id, name=member.full_name) for member in members]
+
+    def create_member(self, payload: MemberCreateRequest) -> Member:
         member = Member(
-            member_id=member_id,
-            first_name=request.first_name,
-            last_name=request.last_name,
-            email=request.email,
-            address=request.address,
-            phone=request.phone,
+            member_id=str(uuid4()),
+            first_name=payload.first_name,
+            last_name=payload.last_name,
+            email=str(payload.email),
+            address=payload.address,
+            phone=payload.phone,
             registration_date=date.today(),
             status=MemberStatus.ACTIVE,
-            created_at=now,
-            updated_at=now
         )
-        
-        created_member = await self.member_repo.create_member(member)
-        return MemberResponse(**created_member.__dict__)
+        try:
+            self.member_repo.create_member(member)
+            self.commit()
+        except Exception as exc:
+            self.rollback()
+            raise DomainError("Member could not be saved. Email may already exist.") from exc
 
-    async def get_member(self, member_id: str) -> Optional[MemberResponse]:
-        member = await self.member_repo.get_member_by_id(member_id)
-        if not member:
-            return None
-        return MemberResponse(**member.__dict__)
-
-    async def search_members(self, query: str, limit: int = 10) -> List[MemberResponse]:
-        members = await self.member_repo.search_members(query, limit)
-        return [MemberResponse(**member.__dict__) for member in members]
-
-    async def autocomplete_members(self, query: str, limit: int = 5) -> List[dict]:
-        return await self.member_repo.autocomplete_members(query, limit)
-
-    async def list_members(self, limit: int = 50, last_key: Optional[str] = None) -> tuple[List[MemberResponse], Optional[str]]:
-        members, next_key = await self.member_repo.list_members(limit, last_key)
-        return [MemberResponse(**member.__dict__) for member in members], next_key
+        created = self.member_repo.get_member_by_id(member.member_id)
+        if not created:
+            raise DomainError("Member was created but could not be reloaded.")
+        return created

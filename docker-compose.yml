@@ -1,34 +1,40 @@
 services:
-  # Test runner
+  api:
+    build: .
+    container_name: lms-api-local
+    ports:
+      - "8000:8000"
+    environment:
+      PYTHONPATH: /app:/app/src
+      APP_ENV: local
+      DATABASE_URL: sqlite:///./data/local/library.db
+      AUTO_CREATE_DB: "true"
+      CORS_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    image: python:3.11-slim
+    container_name: lms-frontend-local
+    working_dir: /site
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./frontend/src:/site:ro
+    command: python -m http.server 8080 --directory /site
+
   test:
     build: .
     volumes:
       - ./src:/app/src
       - ./tests:/app/tests
+      - ./data:/app/data
       - ./htmlcov:/app/htmlcov
     environment:
-      - PYTHONPATH=/app:/app/src
-    command: pytest -v --cov=src --cov-report=term-missing --cov-report=html
-
-  # DynamoDB Local for integration tests
-  dynamodb-local:
-    image: amazon/dynamodb-local:latest
-    container_name: lms-dynamodb-local
-    ports:
-      - "8000:8000"
-    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
-
-  # Local API for testing
-  api:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - PYTHONPATH=/app:/app/src
-      - DYNAMODB_ENDPOINT=http://dynamodb-local:8000
-      - DYNAMODB_TABLE=lms-table-local
-    depends_on:
-      - dynamodb-local
-    command: python -m src.local.api_server
-    volumes:
-      - ./src:/app/src
+      PYTHONPATH: /app:/app/src
+      APP_ENV: test
+      DATABASE_URL: sqlite:///./data/local/test.db
+      AUTO_CREATE_DB: "true"
+    command: pytest tests/unit tests/functional --cov=src/application --cov=src/domain --cov=src/infrastructure --cov-report=term-missing --cov-report=html

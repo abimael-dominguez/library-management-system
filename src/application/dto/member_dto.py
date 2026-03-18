@@ -1,14 +1,16 @@
-from pydantic import BaseModel, Field, EmailStr
-from typing import Optional
-from datetime import datetime, date
+from __future__ import annotations
+
+from datetime import date, datetime
+
+from pydantic import BaseModel, EmailStr, Field
 
 
-class CreateMemberRequest(BaseModel):
+class MemberCreateRequest(BaseModel):
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(..., min_length=1, max_length=100)
     email: EmailStr
-    address: Optional[str] = Field(None, max_length=255)
-    phone: Optional[str] = Field(None, max_length=20)
+    address: str | None = Field(default=None, max_length=255)
+    phone: str | None = Field(default=None, max_length=20)
 
 
 class MemberResponse(BaseModel):
@@ -16,9 +18,14 @@ class MemberResponse(BaseModel):
     first_name: str
     last_name: str
     email: str
-    address: Optional[str]
-    phone: Optional[str]
-    registration_date: Optional[date]
+    address: str | None
+    phone: str | None
+    registration_date: date | None
     status: str
-    created_at: Optional[datetime]
-    updated_at: Optional[datetime]
+    created_at: datetime | None
+    updated_at: datetime | None
+
+
+class MemberAutocompleteResult(BaseModel):
+    id: str
+    name: str

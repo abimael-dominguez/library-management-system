@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Optional
 from datetime import datetime
 
 
@@ -9,8 +10,8 @@ class Employee:
     first_name: str
     last_name: str
     position: str
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     @property
     def full_name(self) -> str:

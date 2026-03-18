@@ -1,5 +1,5 @@
 // Configuration
-const API_BASE_URL = 'https://6dfvt1hpwe.execute-api.us-east-1.amazonaws.com/dev';
+const API_BASE_URL = getApiBaseUrl();
 
 const PALETTES = {
     indigo: {
@@ -20,6 +20,16 @@ const PALETTES = {
 let searchTimeout;
 let currentBooks = [];
 let currentTheme = 'light';
+
+function getApiBaseUrl() {
+    if (window.LMS_API_BASE_URL) {
+        return window.LMS_API_BASE_URL.replace(/\/$/, '');
+    }
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:8000';
+    }
+    return 'http://localhost:8000';
+}
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -128,7 +138,14 @@ async function apiCall(endpoint, options = {}) {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            let message = `HTTP error! status: ${response.status}`;
+            try {
+                const payload = await response.json();
+                message = payload.detail || payload.error || message;
+            } catch (parseError) {
+                // Keep the original fallback message when the body is not JSON.
+            }
+            throw new Error(message);
         }
 
         return await response.json();
@@ -260,7 +277,7 @@ async function searchActiveLoans(query) {
 
     try {
         const data = await apiCall('/loans');
-        const activeLoans = (data.loans || []).filter(loan => loan.status === 'Prestado');
+        const activeLoans = (data.loans || []).filter(loan => ['in_progress', 'overdue'].includes(loan.status));
         const filteredLoans = activeLoans.filter(loan => 
             loan.loan_id.toLowerCase().includes(query.toLowerCase())
         );
@@ -279,7 +296,7 @@ function displayLoanSearchResults(loans) {
         const resultsHtml = loans.map(loan => `
             <div class="search-result-item" onclick="selectLoanForReturn('${loan.loan_id}', '${loan.loan_id}')">
                 <div style="font-weight: 500;">Préstamo: ${loan.loan_id}</div>
-                <div style="color: var(--text-muted); font-size: 0.875rem;">Vence: ${loan.due_date}</div>
+                <div style="color: var(--text-muted); font-size: 0.875rem;">${getStatusLabel(loan.status)} · Vence: ${loan.due_date}</div>
             </div>
         `).join('');
         resultsContainer.innerHTML = resultsHtml;
@@ -349,9 +366,9 @@ function displayBookSearchResults(books) {
         resultsContainer.innerHTML = '<div class="search-result-item">No se encontraron libros</div>';
     } else {
         const resultsHtml = books.map(book => `
-            <div class="search-result-item" onclick="selectBookForLoan('${book.book_id}-001', '${escapeHtml(book.title)}')">
+            <div class="search-result-item" onclick="selectBookForLoan('${book.first_available_copy_id || ''}', '${escapeHtml(book.title)}')">
                 <div style="font-weight: 500;">${escapeHtml(book.title)}</div>
-                <div style="color: var(--text-muted); font-size: 0.875rem;">por ${escapeHtml(book.author)}</div>
+                <div style="color: var(--text-muted); font-size: 0.875rem;">por ${escapeHtml(book.author)} · ${book.available_copies || 0} disponibles</div>
             </div>
         `).join('');
         resultsContainer.innerHTML = resultsHtml;
@@ -361,6 +378,10 @@ function displayBookSearchResults(books) {
 }
 
 function selectBookForLoan(bookCopyId, title) {
+    if (!bookCopyId) {
+        showToast('Ese libro no tiene copias disponibles en este momento', 'warning');
+        return;
+    }
     document.getElementById('bookSearch').value = title;
     document.querySelector('input[name="book_copy_id"]').value = bookCopyId;
     document.getElementById('bookSearchResults').style.display = 'none';
@@ -589,6 +610,17 @@ function renderAvailability(book) {
             </div>
         </div>
     `;
+}
+
+function getStatusLabel(status) {
+    const labels = {
+        in_progress: 'Prestamo activo',
+        returned: 'Devuelto',
+        overdue: 'Vencido',
+        available: 'Disponible',
+        loaned: 'Prestado'
+    };
+    return labels[status] || status;
 }
 
 function showBooksSkeleton(count = 6) {

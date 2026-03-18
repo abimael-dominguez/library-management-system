@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Optional
-from datetime import datetime, date
-from enum import Enum
+from datetime import date, datetime
+from enum import StrEnum
 
 
-class MemberStatus(Enum):
+class MemberStatus(StrEnum):
     ACTIVE = "active"
     INACTIVE = "inactive"
     SUSPENDED = "suspended"
@@ -16,12 +17,12 @@ class Member:
     first_name: str
     last_name: str
     email: str
-    address: Optional[str] = None
-    phone: Optional[str] = None
-    registration_date: Optional[date] = None
+    address: str | None = None
+    phone: str | None = None
+    registration_date: date | None = None
     status: MemberStatus = MemberStatus.ACTIVE
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     @property
     def full_name(self) -> str:

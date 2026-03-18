@@ -138,6 +138,8 @@ celerybeat.pid
 .env
 .envrc
 .venv
+data/local/*.db
+data/local/*.sqlite3
 env/
 venv/
 ENV/

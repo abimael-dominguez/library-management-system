@@ -1,51 +1,45 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import List, Optional
+
 from ..entities.book import Book, BookCopy
 
 
 class BookRepository(ABC):
     @abstractmethod
-    async def create_book(self, book: Book) -> Book:
-        pass
+    def create_book(self, book: Book) -> Book:
+        raise NotImplementedError
 
     @abstractmethod
-    async def get_book_by_id(self, book_id: str) -> Optional[Book]:
-        pass
+    def get_book_by_id(self, book_id: str) -> Book | None:
+        raise NotImplementedError
 
     @abstractmethod
-    async def search_books(self, query: str, limit: int = 10) -> List[Book]:
-        pass
+    def search_books(self, query: str, limit: int = 10) -> list[Book]:
+        raise NotImplementedError
 
     @abstractmethod
-    async def autocomplete_books(self, query: str, limit: int = 5) -> List[dict]:
-        pass
-
-    @abstractmethod
-    async def list_books(self, limit: int = 50, last_key: Optional[str] = None) -> tuple[List[Book], Optional[str]]:
-        pass
-
-    @abstractmethod
-    async def update_book(self, book: Book) -> Book:
-        pass
-
-    @abstractmethod
-    async def delete_book(self, book_id: str) -> bool:
-        pass
+    def list_books(self, limit: int = 50) -> list[Book]:
+        raise NotImplementedError
 
 
 class BookCopyRepository(ABC):
     @abstractmethod
-    async def create_book_copy(self, book_copy: BookCopy) -> BookCopy:
-        pass
+    def create_book_copy(self, book_copy: BookCopy) -> BookCopy:
+        raise NotImplementedError
 
     @abstractmethod
-    async def get_book_copy_by_id(self, book_copy_id: str) -> Optional[BookCopy]:
-        pass
+    def get_book_copy_by_id(self, book_copy_id: str, for_update: bool = False) -> BookCopy | None:
+        raise NotImplementedError
 
     @abstractmethod
-    async def get_copies_by_book_id(self, book_id: str) -> List[BookCopy]:
-        pass
+    def update_book_copy(self, book_copy: BookCopy) -> BookCopy:
+        raise NotImplementedError
 
     @abstractmethod
-    async def update_book_copy(self, book_copy: BookCopy) -> BookCopy:
-        pass
+    def count_available_copies(self, book_id: str) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_first_available_copy_id(self, book_id: str) -> str | None:
+        raise NotImplementedError
