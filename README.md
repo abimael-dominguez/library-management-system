@@ -61,10 +61,24 @@ export AUTO_CREATE_DB=true
 export CORS_ORIGINS=http://localhost:8080,http://127.0.0.1:8080
 ```
 
-### 3. Initialize demo data
+### 3. Synchronize the database from the spreadsheet CSV
 
 ```bash
 python scripts/seed_local_db.py
+```
+
+By default this reads `data/library-cbg-clean.csv`, resets the local library tables, and rebuilds the database from the spreadsheet export.
+
+If you want to import a different CSV file:
+
+```bash
+python scripts/seed_local_db.py --csv data/library-cbg-clean.csv
+```
+
+If you want the small demo dataset instead:
+
+```bash
+python scripts/seed_local_db.py --demo
 ```
 
 ### 4. Start the API
@@ -265,3 +279,12 @@ The previous serverless code was moved out of the active source tree to keep the
 - `tmp/refactor-backup/`
 
 If we need the original AWS Lambda and DynamoDB implementation later, we can also consult the `serverless-project-tecgurus` branch.
+
+## Spreadsheet Sync Notes
+
+The current importer assumes the CSV is the temporary source of truth while the library still works with the spreadsheet.
+
+- Every run of `python scripts/seed_local_db.py` rebuilds the local data from the CSV.
+- Rows marked as `Prestado` or `Prestamo` create active loans.
+- Rows marked as `Entregado` create books and copies but no active loan.
+- If a loaned row is missing member or date data, the importer fills sensible placeholders and reports warnings in the summary output.
