@@ -45,8 +45,7 @@ const libraryService = createLibraryService(createApiClient());
 function initializeApp() {
     ensureToastAnimation();
     state.theme = loadThemePreference();
-    document.documentElement.setAttribute('data-theme', state.theme);
-    updateThemeIcon();
+    applyTheme(state.theme);
 
     state.palette = loadPalettePreference();
     applyPalette(state.palette);
@@ -561,18 +560,35 @@ async function addEmployee() {
 }
 
 function toggleTheme() {
-    state.theme = state.theme === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', state.theme);
-    saveThemePreference(state.theme);
-    updateThemeIcon();
+    setTheme(state.theme === 'light' ? 'dark' : 'light');
 }
 
-function updateThemeIcon() {
-    const icon = document.getElementById('themeIcon');
-    if (!icon) {
+function setTheme(theme) {
+    const nextTheme = theme === 'dark' ? 'dark' : 'light';
+    state.theme = nextTheme;
+    applyTheme(nextTheme);
+    saveThemePreference(nextTheme);
+    showToast(`${nextTheme === 'dark' ? 'Dark' : 'Light'} mode enabled`, 'info');
+}
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    updateThemeControls();
+    updateThemeMeta(theme);
+}
+
+function updateThemeControls() {
+    document.querySelectorAll('[data-theme-option]').forEach(button => {
+        button.classList.toggle('active', button.dataset.themeOption === state.theme);
+    });
+}
+
+function updateThemeMeta(theme) {
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (!metaTheme) {
         return;
     }
-    icon.className = state.theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+    metaTheme.setAttribute('content', theme === 'dark' ? '#08101f' : '#2563eb');
 }
 
 function applyPalette(name) {
@@ -586,11 +602,6 @@ function applyPalette(name) {
     root.style.setProperty('--primary', palette.primary);
     root.style.setProperty('--primary-dark', palette.primaryDark);
     root.style.setProperty('--success', palette.success);
-    root.style.setProperty('--background', palette.background);
-    root.style.setProperty('--surface', palette.surface);
-    root.style.setProperty('--text', palette.text);
-    root.style.setProperty('--text-muted', palette.textMuted);
-    root.style.setProperty('--border', palette.border);
     savePalettePreference(name);
 }
 
@@ -635,6 +646,7 @@ window.LibraryUI = {
     addEmployee,
     addMember,
     applyPalette,
+    setTheme,
     closeFabSheet,
     closeMobileMenu,
     closeModal,

@@ -130,13 +130,28 @@
                     <small>Sync now</small>
                 </div>
             </button>
-            <button class="drawer-item" onclick="window.LibraryUI.toggleTheme();">
-                <i id="themeIcon" class="fas fa-moon"></i>
-                <div>
-                    <p>Theme</p>
-                    <small>Light / Dark</small>
+            <div class="appearance-block">
+                <div class="appearance-header">
+                    <span>Appearance</span>
+                    <small>Select the interface mood</small>
                 </div>
-            </button>
+                <div class="appearance-grid">
+                    <button class="appearance-chip" data-theme-option="light" onclick="window.LibraryUI.setTheme('light')" aria-label="Light mode">
+                        <i class="fas fa-sun"></i>
+                        <div>
+                            <strong>Light</strong>
+                            <small>Clear and airy</small>
+                        </div>
+                    </button>
+                    <button class="appearance-chip" data-theme-option="dark" onclick="window.LibraryUI.setTheme('dark')" aria-label="Dark mode">
+                        <i class="fas fa-moon"></i>
+                        <div>
+                            <strong>Dark</strong>
+                            <small>Focused and premium</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
             <div class="palette-block">
                 <div class="palette-header">
                     <span>Palettes</span>
