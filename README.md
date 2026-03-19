@@ -11,7 +11,7 @@ This phase is focused on manual local testing only. Cloud deployment comes later
 ## Current Architecture
 
 ### Local phase
-- Frontend: static files in `frontend/src`
+- Frontend: static files in `frontend/src`, organized in `application`, `domain`, `infrastructure`, and `ui`
 - Backend API: FastAPI app assembled from `src/application`, `src/domain`, and `src/infrastructure`
 - Local database: SQLite file at `data/local/library.db`
 - Optional later database: PostgreSQL by changing only `DATABASE_URL`
@@ -37,6 +37,95 @@ This phase is focused on manual local testing only. Cloud deployment comes later
 - `POST /loans`
 - `GET /loans/{loan_id}`
 - `PUT /loans/{loan_id}/return`
+
+## Database Schema Definition
+
+This section reflects the current relational schema implemented in [src/infrastructure/models.py](/Users/mi20429/Documents/code/explorations/tecgurus_courses/library-management-system/src/infrastructure/models.py).
+
+### 1. `book` (Metadata for the Title)
+
+This table stores information about a book title, not the individual physical copies.
+
+| Field Name | Description | Data Type / Notes |
+|---|---|---|
+| `book_id` | Primary Key (PK) | `String(36)` application-generated ID |
+| `title` | The name of the book | `String(255)`, indexed, required |
+| `author` | The main author | `String(255)`, indexed, required |
+| `isbn` | International Standard Book Number | `String(17)`, unique, optional |
+| `publisher` | The publishing house | `String(255)`, optional |
+| `publication_year` | The year the book was published | `Integer`, optional |
+| `genre` | The book genre | `String(100)`, optional |
+| `pages` | Number of pages | `Integer`, optional |
+| `max_loan_weeks` | Default number of allowed loan weeks | `Integer`, required, default `3` |
+| `total_copies` | Total registered copies for the title | `Integer`, required, default `1` |
+| `created_at` | Record creation timestamp | `DateTime`, auto-managed |
+| `updated_at` | Record update timestamp | `DateTime`, auto-managed |
+
+### 2. `book_copy` (Physical Inventory Item)
+
+This table tracks each physical copy of a book.
+
+| Field Name | Description | Data Type / Notes |
+|---|---|---|
+| `book_copy_id` | Primary Key (PK) | `String(64)` application-generated copy ID |
+| `book_id` | Foreign Key (FK) | References `book.book_id`, required, `ON DELETE CASCADE` |
+| `status` | Current physical state and availability | `String(20)`, required, choices: `available`, `loaned`, `damaged`, `lost` |
+| `created_at` | Record creation timestamp | `DateTime`, auto-managed |
+| `updated_at` | Record update timestamp | `DateTime`, auto-managed |
+
+### 3. `member` (Library Patrons)
+
+Stores information about borrowers.
+
+| Field Name | Description | Data Type / Notes |
+|---|---|---|
+| `member_id` | Primary Key (PK) | `String(36)` application-generated ID |
+| `first_name` | Member first name | `String(100)`, indexed, required |
+| `last_name` | Member last name | `String(100)`, indexed, required |
+| `address` | Member mailing address | `String(255)`, optional |
+| `phone` | Contact phone number | `String(20)`, optional |
+| `email` | Member email address | `String(254)`, unique, required |
+| `registration_date` | Date the member joined | `Date`, required, default current date |
+| `status` | Member account status | `String(20)`, required, choices: `active`, `inactive`, `suspended` |
+| `created_at` | Record creation timestamp | `DateTime`, auto-managed |
+| `updated_at` | Record update timestamp | `DateTime`, auto-managed |
+
+### 4. `employee` (Library Staff)
+
+Stores staff members involved in loan processing.
+
+| Field Name | Description | Data Type / Notes |
+|---|---|---|
+| `employee_id` | Primary Key (PK) | `String(36)` application-generated ID |
+| `first_name` | Employee first name | `String(100)`, required |
+| `last_name` | Employee last name | `String(100)`, required |
+| `position` | Employee job title | `String(100)`, required |
+| `created_at` | Record creation timestamp | `DateTime`, auto-managed |
+| `updated_at` | Record update timestamp | `DateTime`, auto-managed |
+
+### 5. `loan` (Transaction Record)
+
+Records each borrowing transaction for a specific physical copy.
+
+| Field Name | Description | Data Type / Notes |
+|---|---|---|
+| `loan_id` | Primary Key (PK) | `String(36)` application-generated ID |
+| `book_copy_id` | Foreign Key (FK) | References `book_copy.book_copy_id`, required, `ON DELETE CASCADE` |
+| `member_id` | Foreign Key (FK) | References `member.member_id`, required, `ON DELETE CASCADE` |
+| `employee_id` | Foreign Key (FK) | References `employee.employee_id`, optional, `ON DELETE SET NULL` |
+| `loan_date` | Date the book was borrowed | `Date`, required |
+| `due_date` | Estimated return date | `Date`, required |
+| `actual_return_date` | Real return date | `Date`, optional |
+| `status` | Current transaction state | `String(20)`, required, choices: `in_progress`, `returned`, `overdue` |
+| `created_at` | Record creation timestamp | `DateTime`, auto-managed |
+| `updated_at` | Record update timestamp | `DateTime`, auto-managed |
+
+### Constraints and Notes
+
+- `loan.due_date >= loan.loan_date`
+- `loan.actual_return_date` must be null or on/after `loan.loan_date`
+- Only one active loan per copy is allowed through a unique filtered index on `loan.book_copy_id` where status is `in_progress`
+- The API exposes `available_copies` and `first_available_copy_id` as computed response fields, but those are not stored directly in the `book` table
 
 ## Local Run With Python
 
@@ -202,6 +291,35 @@ curl -X PUT http://localhost:8000/loans/REPLACE_WITH_LOAN_ID/return \
 - Functional tests: API endpoints with isolated SQLite
 - Frontend: manual browser verification against localhost API
 
+### Recommended Runtime Smoke Tests
+
+Run these after the API and frontend are both up locally.
+
+#### Frontend smoke test
+1. Open `http://localhost:8080`
+2. Verify the burger menu opens and shows `Home`, `Members`, and `Employees`
+3. Verify the home dashboard loads counts for books, active loans, overdue loans, and members
+4. Click `Loans` and confirm the main list switches from books to active loans
+5. Click `Overdue` and confirm the main list switches to overdue loans
+6. Click `Catalog` and confirm the main list switches back to books
+7. Open `New Loan`, select a book, member, and employee, then create the loan
+8. Confirm the new loan appears in the `Loans` list
+9. Use `Register return` from the active loan list and confirm the loan disappears from active loans
+10. Refresh the browser and confirm the returned loan state is still correct
+11. Open `Members` from the side menu and create a member
+12. Open `Employees` from the side menu and create an employee
+13. Toggle theme and confirm the icon and colors update correctly
+
+#### Backend smoke test
+1. Call `GET /health` and confirm `{"status":"ok"}` is returned
+2. Call `GET /books`, `GET /members`, `GET /employees`, `GET /loans`, and `GET /import-summary`
+3. Create a member with `POST /members`
+4. Create an employee with `POST /employees`
+5. Create a loan with `POST /loans`
+6. Return the loan with `PUT /loans/{loan_id}/return`
+7. Reload the same loan with `GET /loans/{loan_id}` and confirm `status=returned`
+8. Create a second loan for the same copy and confirm it succeeds after the return
+
 Run locally without Docker:
 
 ```bash
@@ -252,6 +370,14 @@ src/infrastructure/
 src/main.py
 
 frontend/src/
+  application/
+    services/
+    state/
+  domain/
+  infrastructure/
+    api/
+    storage/
+  ui/
   index.html
   app.js
   styles.css

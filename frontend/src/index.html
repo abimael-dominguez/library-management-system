@@ -27,89 +27,141 @@
                 </div>
             </div>
             <div class="nav-actions">
-                <button class="btn-icon mobile-menu" onclick="toggleMobileMenu()">
+                <button class="btn-icon mobile-menu" onclick="window.LibraryUI.toggleMobileMenu()" aria-label="Open menu">
                     <i class="fas fa-bars"></i>
                 </button>
             </div>
         </div>
     </nav>
 
+    <section class="section-switcher desktop-only">
+        <div class="container">
+            <div class="section-switcher-shell">
+                <div class="section-switcher-tabs">
+                    <button class="section-chip active" data-section-target="home" onclick="window.LibraryUI.navigateTo('home')">
+                        <i class="fas fa-house"></i> Home
+                    </button>
+                    <button class="section-chip" data-section-target="loans" onclick="window.LibraryUI.filterLoans('active')">
+                        <i class="fas fa-book-reader"></i> Loans
+                    </button>
+                    <button class="section-chip" data-section-target="overdue" onclick="window.LibraryUI.filterLoans('overdue')">
+                        <i class="fas fa-hourglass-half"></i> Overdue
+                    </button>
+                    <button class="section-chip" data-section-target="members" onclick="window.LibraryUI.navigateTo('members')">
+                        <i class="fas fa-users"></i> Members
+                    </button>
+                    <button class="section-chip" data-section-target="employees" onclick="window.LibraryUI.navigateTo('employees')">
+                        <i class="fas fa-id-badge"></i> Employees
+                    </button>
+                </div>
+                <button id="backHomeButton" class="btn btn-outline section-home-button view-hidden" onclick="window.LibraryUI.navigateTo('home')">
+                    <i class="fas fa-arrow-left"></i> Back to Home
+                </button>
+            </div>
+        </div>
+    </section>
+
     <!-- Mobile Drawer -->
-    <div id="mobileMenuOverlay" class="mobile-overlay" onclick="closeMobileMenu()"></div>
+    <div id="mobileMenuOverlay" class="mobile-overlay" onclick="window.LibraryUI.closeMobileMenu()"></div>
     <aside id="mobileMenu" class="mobile-drawer">
         <div class="drawer-header">
             <div class="drawer-brand">
                 <div class="brand-icon"><i class="fas fa-book-open"></i></div>
                 <div class="brand-text">
                     <span class="nav-title">Digital Library</span>
-                    <span class="nav-subtitle">Acciones rápidas</span>
+                    <span class="nav-subtitle">Navigation and shortcuts</span>
                 </div>
             </div>
-            <button class="btn-icon" aria-label="Cerrar menú" onclick="closeMobileMenu()">
+            <button class="btn-icon" aria-label="Close menu" onclick="window.LibraryUI.closeMobileMenu()">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <div class="drawer-actions">
-            <button class="drawer-item" onclick="showAddBookModal(); closeMobileMenu();">
-                <i class="fas fa-plus"></i>
+        <div class="drawer-nav">
+            <p class="drawer-section-label">Navigation</p>
+            <button class="drawer-nav-item active" data-nav-target="home" onclick="window.LibraryUI.navigateTo('home')">
+                <i class="fas fa-house"></i>
                 <div>
-                    <p>Agregar libro</p>
-                    <small>Crear un título nuevo</small>
+                    <p>Home</p>
+                    <small>Catalog, loans, and status</small>
                 </div>
             </button>
-            <button class="drawer-item" onclick="showCreateLoanModal(); closeMobileMenu();">
+            <button class="drawer-nav-item" data-nav-target="members" onclick="window.LibraryUI.navigateTo('members')">
+                <i class="fas fa-users"></i>
+                <div>
+                    <p>Members</p>
+                    <small>Registration and member lookup</small>
+                </div>
+            </button>
+            <button class="drawer-nav-item" data-nav-target="employees" onclick="window.LibraryUI.navigateTo('employees')">
+                <i class="fas fa-id-badge"></i>
+                <div>
+                    <p>Employees</p>
+                    <small>Staff and loan processing</small>
+                </div>
+            </button>
+        </div>
+        <div class="drawer-actions">
+            <p class="drawer-section-label">Quick actions</p>
+            <button class="drawer-item" onclick="window.LibraryUI.showCreateLoanModal(); window.LibraryUI.closeMobileMenu();">
                 <i class="fas fa-hand-holding"></i>
                 <div>
-                    <p>Nuevo préstamo</p>
-                    <small>Entrega inmediata</small>
+                    <p>New loan</p>
+                    <small>Issue a book now</small>
                 </div>
             </button>
-            <button class="drawer-item" onclick="showReturnBookModal(); closeMobileMenu();">
+            <button class="drawer-item" onclick="window.LibraryUI.showReturnBookModal(); window.LibraryUI.closeMobileMenu();">
                 <i class="fas fa-undo"></i>
                 <div>
-                    <p>Devolver libro</p>
-                    <small>Registrar retorno</small>
+                    <p>Return book</p>
+                    <small>Record a return</small>
                 </div>
             </button>
-            <button class="drawer-item" onclick="loadBooks(); closeMobileMenu();">
+            <button class="drawer-item" onclick="window.LibraryUI.showAddBookModal(); window.LibraryUI.closeMobileMenu();">
+                <i class="fas fa-plus"></i>
+                <div>
+                    <p>Add book</p>
+                    <small>Create a new title</small>
+                </div>
+            </button>
+            <button class="drawer-item" onclick="window.LibraryUI.loadBooks(); window.LibraryUI.closeMobileMenu();">
                 <i class="fas fa-sync-alt"></i>
                 <div>
-                    <p>Refrescar catálogo</p>
-                    <small>Sincronizar ahora</small>
+                    <p>Refresh catalog</p>
+                    <small>Sync now</small>
                 </div>
             </button>
-            <button class="drawer-item" onclick="toggleTheme();">
-                <i class="fas fa-moon"></i>
+            <button class="drawer-item" onclick="window.LibraryUI.toggleTheme();">
+                <i id="themeIcon" class="fas fa-moon"></i>
                 <div>
-                    <p>Tema</p>
-                    <small>Claro / Oscuro</small>
+                    <p>Theme</p>
+                    <small>Light / Dark</small>
                 </div>
             </button>
             <div class="palette-block">
                 <div class="palette-header">
-                    <span>Paletas</span>
-                    <small>Profesional / cutting-edge</small>
+                    <span>Palettes</span>
+                    <small>Professional / cutting-edge</small>
                 </div>
                 <div class="palette-grid">
-                    <button class="palette-chip" onclick="applyPalette('indigo')" aria-label="Indigo">
+                    <button class="palette-chip" onclick="window.LibraryUI.applyPalette('indigo')" aria-label="Indigo">
                         <span style="background:#0f172a"></span>
                         <span style="background:#3f51b5"></span>
                         <span style="background:#303f9f"></span>
                         <span style="background:#e3e7ef"></span>
                     </button>
-                    <button class="palette-chip" onclick="applyPalette('teal')" aria-label="Teal">
+                    <button class="palette-chip" onclick="window.LibraryUI.applyPalette('teal')" aria-label="Teal">
                         <span style="background:#0f172a"></span>
                         <span style="background:#009688"></span>
                         <span style="background:#00796b"></span>
                         <span style="background:#d7e2dd"></span>
                     </button>
-                    <button class="palette-chip" onclick="applyPalette('amber')" aria-label="Amber">
+                    <button class="palette-chip" onclick="window.LibraryUI.applyPalette('amber')" aria-label="Amber">
                         <span style="background:#111827"></span>
                         <span style="background:#ffb300"></span>
                         <span style="background:#f59e00"></span>
                         <span style="background:#f0e6d7"></span>
                     </button>
-                    <button class="palette-chip" onclick="applyPalette('slate')" aria-label="Slate">
+                    <button class="palette-chip" onclick="window.LibraryUI.applyPalette('slate')" aria-label="Slate">
                         <span style="background:#0f172a"></span>
                         <span style="background:#546e7a"></span>
                         <span style="background:#37474f"></span>
@@ -121,95 +173,250 @@
     </aside>
 
     <!-- Hero Section -->
-    <section class="hero">
+    <section class="hero" data-view="home">
         <div class="hero-content">
-            <h1>Gestiona tu biblioteca sin fricción</h1>
-            <p>Préstamos, devoluciones y catálogo en una interfaz pulida, lista para móvil</p>
+            <p class="hero-eyebrow">Circulation desk</p>
+            <h1>Run your library without friction</h1>
+            <p>Manage loans, returns, and catalog updates in one clean workspace.</p>
             <div class="hero-actions desktop-only">
-                <button class="btn btn-primary" onclick="showAddBookModal()">
-                    <i class="fas fa-plus"></i> Add Book
-                </button>
-                <button class="btn btn-secondary" onclick="showCreateLoanModal()">
+                <button class="btn btn-secondary" onclick="window.LibraryUI.showCreateLoanModal()">
                     <i class="fas fa-hand-holding"></i> New Loan
                 </button>
-                <button class="btn btn-success" onclick="showReturnBookModal()">
+                <button class="btn btn-success" onclick="window.LibraryUI.showReturnBookModal()">
                     <i class="fas fa-undo"></i> Return Book
+                </button>
+                <button class="btn btn-primary" onclick="window.LibraryUI.showAddBookModal()">
+                    <i class="fas fa-plus"></i> Add Book
+                </button>
+            </div>
+            <div class="hero-actions mobile-only mobile-hero-actions">
+                <button class="btn btn-secondary" onclick="window.LibraryUI.showCreateLoanModal()">
+                    <i class="fas fa-hand-holding"></i> New Loan
+                </button>
+                <button class="btn btn-success" onclick="window.LibraryUI.showReturnBookModal()">
+                    <i class="fas fa-undo"></i> Return Book
+                </button>
+                <button class="btn btn-primary" onclick="window.LibraryUI.showAddBookModal()">
+                    <i class="fas fa-plus"></i> Add Book
                 </button>
             </div>
         </div>
     </section>
 
+    <section class="section-switcher mobile-only mobile-switcher" data-view="home">
+        <div class="container">
+            <div class="section-switcher-shell">
+                <div class="section-switcher-tabs">
+                    <button class="section-chip active" data-section-target="home" onclick="window.LibraryUI.navigateTo('home')">
+                        <i class="fas fa-house"></i> Home
+                    </button>
+                    <button class="section-chip" data-section-target="loans" onclick="window.LibraryUI.filterLoans('active')">
+                        <i class="fas fa-book-reader"></i> Loans
+                    </button>
+                    <button class="section-chip" data-section-target="overdue" onclick="window.LibraryUI.filterLoans('overdue')">
+                        <i class="fas fa-hourglass-half"></i> Overdue
+                    </button>
+                    <button class="section-chip" data-section-target="members" onclick="window.LibraryUI.navigateTo('members')">
+                        <i class="fas fa-users"></i> Members
+                    </button>
+                    <button class="section-chip" data-section-target="employees" onclick="window.LibraryUI.navigateTo('employees')">
+                        <i class="fas fa-id-badge"></i> Employees
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Search Section -->
-    <section class="search-section">
+    <section class="search-section" data-view="home">
         <div class="container">
             <div class="search-card">
                 <div class="search-header">
-                    <div class="search-badge"><i class="fas fa-bolt"></i> Búsqueda rápida</div>
-                    <h2>Encuentra libros</h2>
-                    <p class="search-subtitle">Filtra por título, autor o ISBN en segundos</p>
+                    <div class="search-badge"><i class="fas fa-bolt"></i> Quick search</div>
+                    <h2>Find books</h2>
+                    <p class="search-subtitle">Filter by title, author, or ISBN in seconds</p>
                 </div>
                 <div class="search-container">
                     <i class="fas fa-search search-icon"></i>
                     <input type="text" class="search-input" id="searchInput" 
-                           placeholder="Buscar por título, autor o ISBN" 
-                           onkeyup="searchBooks(this.value)">
+                           placeholder="Search by title, author, or ISBN">
                     <div id="searchResults" class="search-results"></div>
+                </div>
+                <div class="search-hints">
+                    <span class="search-hint-chip"><i class="fas fa-book"></i> Title</span>
+                    <span class="search-hint-chip"><i class="fas fa-user-pen"></i> Author</span>
+                    <span class="search-hint-chip"><i class="fas fa-barcode"></i> ISBN</span>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Stats Section -->
-    <section class="stats-section">
+    <section class="stats-section" data-view="home">
         <div class="container">
             <div class="stats-grid">
-                <div class="stat-card" onclick="filterBooks('all')">
+                <div class="stat-card" onclick="window.LibraryUI.filterBooks('all')">
                     <div class="stat-icon soft-primary">
                         <i class="fas fa-books"></i>
                     </div>
                     <div class="stat-content">
-                        <p class="stat-label">Catálogo</p>
+                        <p class="stat-label">Catalog</p>
                         <h3 id="totalBooks">0</h3>
-                        <small>Total de libros</small>
+                        <small>Total books</small>
+                    </div>
+                    <div class="stat-affordance">
+                        <span>Open catalog</span>
+                        <i class="fas fa-arrow-right"></i>
                     </div>
                 </div>
-                <div class="stat-card" onclick="showReturnBookModal()">
+                <div class="stat-card" onclick="window.LibraryUI.filterLoans('active')">
                     <div class="stat-icon soft-accent">
                         <i class="fas fa-book-reader"></i>
                     </div>
                     <div class="stat-content">
-                        <p class="stat-label">Préstamos</p>
+                        <p class="stat-label">Loans</p>
                         <h3 id="activeLoans">0</h3>
-                        <small>Activos</small>
+                        <small>Active</small>
+                    </div>
+                    <div class="stat-affordance">
+                        <span>Review loans</span>
+                        <i class="fas fa-arrow-right"></i>
                     </div>
                 </div>
-                <div class="stat-card" onclick="showToast('Members feature coming soon!', 'info')">
+                <div class="stat-card" onclick="window.LibraryUI.navigateTo('members')">
                     <div class="stat-icon soft-neutral">
                         <i class="fas fa-users"></i>
                     </div>
                     <div class="stat-content">
-                        <p class="stat-label">Miembros</p>
+                        <p class="stat-label">Members</p>
                         <h3 id="totalMembers">0</h3>
-                        <small>Registrados</small>
+                        <small>Registered</small>
+                    </div>
+                    <div class="stat-affordance">
+                        <span>Manage members</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                </div>
+                <div class="stat-card" onclick="window.LibraryUI.filterLoans('overdue')">
+                    <div class="stat-icon soft-warning">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <div class="stat-content">
+                        <p class="stat-label">Overdue</p>
+                        <h3 id="overdueLoans">0</h3>
+                        <small>Need follow-up</small>
+                    </div>
+                    <div class="stat-affordance">
+                        <span>See overdue</span>
+                        <i class="fas fa-arrow-right"></i>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
+    <section class="insights-section" data-view="home">
+        <div class="container">
+            <div id="importSummaryCard" class="summary-card">
+                <div class="summary-copy">
+                    <div class="summary-topline">
+                        <div class="summary-icon">
+                            <i class="fas fa-file-waveform"></i>
+                        </div>
+                        <div>
+                            <p class="eyebrow">Sync</p>
+                            <h2>Spreadsheet status</h2>
+                        </div>
+                    </div>
+                    <div class="summary-source">
+                        <span class="summary-source-label">Source</span>
+                        <strong id="importSource">Loading...</strong>
+                    </div>
+                    <p id="importSummaryText">Loading the latest import summary...</p>
+                </div>
+                <div class="summary-metrics">
+                    <div class="summary-pill summary-pill-status">
+                        <span>Status</span>
+                        <strong id="importStatusLabel">Checking</strong>
+                    </div>
+                    <div class="summary-pill">
+                        <span>Warnings</span>
+                        <strong id="importWarnings">0</strong>
+                    </div>
+                    <div class="summary-pill">
+                        <span>Copies</span>
+                        <strong id="importCopies">0</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="management-section admin-section" data-view="members">
+        <div class="container">
+            <div class="admin-shell">
+                <div class="admin-hero">
+                    <p class="eyebrow">Administration</p>
+                    <h2>Members</h2>
+                    <p class="admin-copy">Manage library members without pulling attention away from the main circulation view.</p>
+                </div>
+                <div class="management-card">
+                    <div class="section-header compact">
+                        <div>
+                            <p class="eyebrow">Members</p>
+                            <h2>Member directory</h2>
+                        </div>
+                        <button class="btn btn-outline" onclick="window.LibraryUI.showAddMemberModal()">
+                            <i class="fas fa-user-plus"></i> New
+                        </button>
+                    </div>
+                    <div id="membersList" class="mini-list"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="management-section admin-section" data-view="employees">
+        <div class="container">
+            <div class="admin-shell">
+                <div class="admin-hero">
+                    <p class="eyebrow">Administration</p>
+                    <h2>Employees</h2>
+                    <p class="admin-copy">Keep the staff who handle loans, returns, and follow-up organized in one place.</p>
+                </div>
+                <div class="management-card">
+                    <div class="section-header compact">
+                        <div>
+                            <p class="eyebrow">Staff</p>
+                            <h2>Employee directory</h2>
+                        </div>
+                        <button class="btn btn-outline" onclick="window.LibraryUI.showAddEmployeeModal()">
+                            <i class="fas fa-id-badge"></i> New
+                        </button>
+                    </div>
+                    <div id="employeesList" class="mini-list"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Books Section -->
-    <section class="books-section">
+    <section class="books-section" data-view="home">
         <div class="container">
             <div class="section-header">
                 <div>
-                    <p class="eyebrow">Colección</p>
-                    <h2>Libros disponibles</h2>
+                    <p id="collectionEyebrow" class="eyebrow">Collection</p>
+                    <h2 id="collectionTitle">Available books</h2>
+                    <p id="collectionDescription" class="section-description">Browse the catalog and review title availability.</p>
                 </div>
                 <div class="section-actions">
-                    <button class="btn btn-outline desktop-only" onclick="loadBooks()">
-                        <i class="fas fa-sync-alt"></i> Refrescar
+                    <button id="collectionHomeButton" class="btn btn-outline view-hidden" onclick="window.LibraryUI.navigateTo('home')">
+                        <i class="fas fa-arrow-left"></i> Back to Home
                     </button>
-                    <button class="btn-icon mobile-only" onclick="loadBooks()" aria-label="Refrescar libros">
+                    <button class="btn btn-outline desktop-only" onclick="window.LibraryUI.loadBooks()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="btn-icon mobile-only" onclick="window.LibraryUI.loadBooks()" aria-label="Refresh books">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
@@ -227,8 +434,11 @@
     <div class="modal" id="addBookModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Add New Book</h3>
-                <button class="btn-close" onclick="closeModal('addBookModal')">
+                <div>
+                    <h3>Add New Book</h3>
+                    <p class="modal-subtitle">Create a new title and define how many copies are ready to circulate.</p>
+                </div>
+                <button class="btn-close" onclick="window.LibraryUI.closeModal('addBookModal')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -273,8 +483,8 @@
                 </div>
             </form>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('addBookModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="addBook()">Add Book</button>
+                <button class="btn btn-secondary" onclick="window.LibraryUI.closeModal('addBookModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="window.LibraryUI.addBook()">Add Book</button>
             </div>
         </div>
     </div>
@@ -283,46 +493,53 @@
     <div class="modal" id="createLoanModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Crear Préstamo</h3>
-                <button class="btn-close" onclick="closeModal('createLoanModal')">
+                <div>
+                    <h3>Create Loan</h3>
+                    <p class="modal-subtitle">Match an available copy with a member and set the expected return date.</p>
+                </div>
+                <button class="btn-close" onclick="window.LibraryUI.closeModal('createLoanModal')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <form id="createLoanForm" class="modal-body">
                 <div class="form-group">
-                    <label>Buscar Libro *</label>
+                    <label>Find Book *</label>
                     <div class="search-container">
-                        <input type="text" id="bookSearch" placeholder="Buscar por título o autor..." onkeyup="searchBooksForLoan(this.value)">
+                        <input type="text" id="bookSearch" placeholder="Search by title or author..." onkeyup="window.LibraryUI.searchBooksForLoan(this.value)">
                         <div id="bookSearchResults" class="search-results"></div>
                     </div>
                     <input type="hidden" name="book_copy_id" required>
                 </div>
                 <div class="form-group">
-                    <label>Buscar Miembro *</label>
+                    <label>Find Member *</label>
                     <div class="search-container">
-                        <input type="text" id="memberSearch" placeholder="Buscar por nombre..." onkeyup="searchMembersForLoan(this.value)">
+                        <input type="text" id="memberSearch" placeholder="Search by name..." onkeyup="window.LibraryUI.searchMembersForLoan(this.value)">
                         <div id="memberSearchResults" class="search-results"></div>
                     </div>
                     <input type="hidden" name="member_id" required>
                 </div>
                 <div class="form-group">
-                    <label>Empleado</label>
-                    <input type="text" name="employee_id" placeholder="Employee ID opcional">
+                    <label>Employee</label>
+                    <div class="search-container">
+                        <input type="text" id="employeeSearch" placeholder="Search employee..." onkeyup="window.LibraryUI.searchEmployeesForLoan(this.value)">
+                        <div id="employeeSearchResults" class="search-results"></div>
+                    </div>
+                    <input type="hidden" name="employee_id">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Fecha de Préstamo *</label>
+                        <label>Loan Date *</label>
                         <input type="date" name="loan_date" required>
                     </div>
                     <div class="form-group">
-                        <label>Fecha de Vencimiento *</label>
+                        <label>Due Date *</label>
                         <input type="date" name="due_date" required>
                     </div>
                 </div>
             </form>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('createLoanModal')">Cancelar</button>
-                <button class="btn btn-primary" onclick="createLoan()">Crear Préstamo</button>
+                <button class="btn btn-secondary" onclick="window.LibraryUI.closeModal('createLoanModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="window.LibraryUI.createLoan()">Create Loan</button>
             </div>
         </div>
     </div>
@@ -331,28 +548,107 @@
     <div class="modal" id="returnBookModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Devolver Libro</h3>
-                <button class="btn-close" onclick="closeModal('returnBookModal')">
+                <div>
+                    <h3>Return Book</h3>
+                    <p class="modal-subtitle">Find the active loan and record when the copy came back to the shelf.</p>
+                </div>
+                <button class="btn-close" onclick="window.LibraryUI.closeModal('returnBookModal')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <form id="returnBookForm" class="modal-body">
                 <div class="form-group">
-                    <label>Buscar Préstamo Activo *</label>
+                    <label>Find Active Loan *</label>
                     <div class="search-container">
-                        <input type="text" id="loanSearch" placeholder="Buscar por libro o miembro..." onkeyup="searchActiveLoans(this.value)">
+                        <input type="text" id="loanSearch" placeholder="Search by book or member..." onkeyup="window.LibraryUI.searchActiveLoans(this.value)">
                         <div id="loanSearchResults" class="search-results"></div>
                     </div>
                     <input type="hidden" name="loan_id" required>
                 </div>
                 <div class="form-group">
-                    <label>Fecha de Devolución</label>
+                    <label>Return Date</label>
                     <input type="date" name="return_date">
                 </div>
             </form>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal('returnBookModal')">Cancelar</button>
-                <button class="btn btn-success" onclick="returnBook()">Devolver Libro</button>
+                <button class="btn btn-secondary" onclick="window.LibraryUI.closeModal('returnBookModal')">Cancel</button>
+                <button class="btn btn-success" onclick="window.LibraryUI.returnBook()">Return Book</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="addMemberModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h3>Register Member</h3>
+                    <p class="modal-subtitle">Add a borrower profile so circulation records stay complete and traceable.</p>
+                </div>
+                <button class="btn-close" onclick="window.LibraryUI.closeModal('addMemberModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="addMemberForm" class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>First Name *</label>
+                        <input type="text" name="first_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Last Name *</label>
+                        <input type="text" name="last_name" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <input type="text" name="address">
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="text" name="phone">
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.LibraryUI.closeModal('addMemberModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="window.LibraryUI.addMember()">Save member</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="addEmployeeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h3>Register Employee</h3>
+                    <p class="modal-subtitle">Keep staff records up to date for loan processing and follow-up.</p>
+                </div>
+                <button class="btn-close" onclick="window.LibraryUI.closeModal('addEmployeeModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="addEmployeeForm" class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>First Name *</label>
+                        <input type="text" name="first_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Last Name *</label>
+                        <input type="text" name="last_name" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Position *</label>
+                    <input type="text" name="position" required>
+                </div>
+            </form>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="window.LibraryUI.closeModal('addEmployeeModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="window.LibraryUI.addEmployee()">Save employee</button>
             </div>
         </div>
     </div>
@@ -361,36 +657,36 @@
     <div id="toastContainer" class="toast-container"></div>
 
     <!-- FAB action sheet (mobile) -->
-    <div id="fabOverlay" class="fab-overlay" onclick="closeFabSheet()"></div>
+    <div id="fabOverlay" class="fab-overlay" onclick="window.LibraryUI.closeFabSheet()"></div>
     <div class="fab-container mobile-only">
         <div id="fabSheet" class="fab-sheet">
-            <button class="fab-sheet-item" onclick="showAddBookModal(); closeFabSheet();">
-                <i class="fas fa-plus"></i>
-                <div>
-                    <p>Agregar libro</p>
-                    <small>Nuevo título</small>
-                </div>
-            </button>
-            <button class="fab-sheet-item" onclick="showCreateLoanModal(); closeFabSheet();">
+            <button class="fab-sheet-item" onclick="window.LibraryUI.showCreateLoanModal(); window.LibraryUI.closeFabSheet();">
                 <i class="fas fa-hand-holding"></i>
                 <div>
-                    <p>Nuevo préstamo</p>
-                    <small>Entrega</small>
+                    <p>New loan</p>
+                    <small>Issue book</small>
                 </div>
             </button>
-            <button class="fab-sheet-item" onclick="showReturnBookModal(); closeFabSheet();">
+            <button class="fab-sheet-item" onclick="window.LibraryUI.showReturnBookModal(); window.LibraryUI.closeFabSheet();">
                 <i class="fas fa-undo"></i>
                 <div>
-                    <p>Devolver</p>
-                    <small>Registrar retorno</small>
+                    <p>Return</p>
+                    <small>Record return</small>
+                </div>
+            </button>
+            <button class="fab-sheet-item" onclick="window.LibraryUI.showAddBookModal(); window.LibraryUI.closeFabSheet();">
+                <i class="fas fa-plus"></i>
+                <div>
+                    <p>Add book</p>
+                    <small>New title</small>
                 </div>
             </button>
         </div>
-        <button class="fab-main" onclick="toggleFabSheet()" aria-label="Acciones rápidas">
+        <button class="fab-main" onclick="window.LibraryUI.toggleFabSheet()" aria-label="Quick actions">
             <i class="fas fa-plus"></i>
         </button>
     </div>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>

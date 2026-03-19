@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ...domain.entities.loan import Loan, LoanStatus
 from ...domain.repositories.loan_repository import LoanRepository
-from ..models import LoanModel
+from ..models import BookCopyModel, BookModel, EmployeeModel, LoanModel, MemberModel
 
 
 def to_domain_loan(model: LoanModel) -> Loan:
@@ -20,6 +20,18 @@ def to_domain_loan(model: LoanModel) -> Loan:
         due_date=model.due_date,
         actual_return_date=model.actual_return_date,
         status=LoanStatus(model.status),
+        book_title=model.book_copy.book.title if model.book_copy and model.book_copy.book else None,
+        book_author=model.book_copy.book.author if model.book_copy and model.book_copy.book else None,
+        member_name=(
+            f"{model.member.first_name} {model.member.last_name}".strip()
+            if model.member
+            else None
+        ),
+        employee_name=(
+            f"{model.employee.first_name} {model.employee.last_name}".strip()
+            if model.employee
+            else None
+        ),
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
@@ -45,14 +57,38 @@ class SqlAlchemyLoanRepository(LoanRepository):
         return loan
 
     def get_loan_by_id(self, loan_id: str, for_update: bool = False) -> Loan | None:
-        stmt = select(LoanModel).where(LoanModel.loan_id == loan_id)
+        stmt = (
+            select(LoanModel)
+            .join(BookCopyModel, LoanModel.book_copy_id == BookCopyModel.book_copy_id)
+            .join(BookModel, BookCopyModel.book_id == BookModel.book_id)
+            .join(MemberModel, LoanModel.member_id == MemberModel.member_id)
+            .outerjoin(EmployeeModel, LoanModel.employee_id == EmployeeModel.employee_id)
+            .where(LoanModel.loan_id == loan_id)
+        )
         if for_update:
             stmt = stmt.with_for_update()
         model = self.db.scalars(stmt).first()
         return to_domain_loan(model) if model else None
 
+    def update_loan(self, loan: Loan) -> Loan:
+        model = self.db.get(LoanModel, loan.loan_id)
+        if not model:
+            return loan
+
+        model.actual_return_date = loan.actual_return_date
+        model.status = loan.status.value
+        return loan
+
     def list_loans(self, limit: int = 50) -> list[Loan]:
-        stmt = select(LoanModel).order_by(LoanModel.created_at.desc()).limit(limit)
+        stmt = (
+            select(LoanModel)
+            .join(BookCopyModel, LoanModel.book_copy_id == BookCopyModel.book_copy_id)
+            .join(BookModel, BookCopyModel.book_id == BookModel.book_id)
+            .join(MemberModel, LoanModel.member_id == MemberModel.member_id)
+            .outerjoin(EmployeeModel, LoanModel.employee_id == EmployeeModel.employee_id)
+            .order_by(LoanModel.created_at.desc())
+            .limit(limit)
+        )
         return [to_domain_loan(model) for model in self.db.scalars(stmt).all()]
 
     def get_active_loans_by_book_copy_id(self, book_copy_id: str) -> list[Loan]:

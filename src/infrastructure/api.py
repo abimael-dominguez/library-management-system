@@ -31,7 +31,7 @@ from .repositories import (
     SqlAlchemyLoanRepository,
     SqlAlchemyMemberRepository,
 )
-from .seed import seed_demo_data
+from .seed import read_seed_summary, seed_demo_data
 from .settings import settings
 
 
@@ -90,6 +90,10 @@ def serialize_loan(loan: Loan) -> LoanResponse:
         due_date=loan.due_date,
         actual_return_date=loan.actual_return_date,
         status=loan.status.value,
+        book_title=loan.book_title,
+        book_author=loan.book_author,
+        member_name=loan.member_name,
+        employee_name=loan.employee_name,
         created_at=loan.created_at,
         updated_at=loan.updated_at,
     )
@@ -142,6 +146,10 @@ def create_app(*, auto_seed: bool = True) -> FastAPI:
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok", "environment": settings.app_env}
+
+    @app.get("/import-summary")
+    def import_summary():
+        return read_seed_summary()
 
     @app.get("/books")
     def list_books(limit: int = Query(default=50, ge=1, le=100), db: Session = Depends(get_db)):

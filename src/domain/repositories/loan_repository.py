@@ -16,6 +16,10 @@ class LoanRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def update_loan(self, loan: Loan) -> Loan:
+        raise NotImplementedError
+
+    @abstractmethod
     def list_loans(self, limit: int = 50) -> list[Loan]:
         raise NotImplementedError
 

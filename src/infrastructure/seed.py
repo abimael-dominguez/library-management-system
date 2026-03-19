@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import unicodedata
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -13,6 +14,9 @@ from sqlalchemy.orm import Session
 from .models import BookCopyModel, BookModel, EmployeeModel, LoanModel, MemberModel
 
 
+SUMMARY_OUTPUT_PATH = Path("data/local/last_seed_summary.json")
+
+
 @dataclass
 class SeedSummary:
     books: int = 0
@@ -21,6 +25,18 @@ class SeedSummary:
     employees: int = 0
     active_loans: int = 0
     warnings: int = 0
+    csv_path: str | None = None
+
+    def to_dict(self) -> dict[str, int | str | None]:
+        return {
+            "books": self.books,
+            "copies": self.copies,
+            "members": self.members,
+            "employees": self.employees,
+            "active_loans": self.active_loans,
+            "warnings": self.warnings,
+            "csv_path": self.csv_path,
+        }
 
 
 def normalize_text(value: str | None) -> str:
@@ -164,6 +180,7 @@ def seed_from_csv(db: Session, csv_path: Path, reset: bool = True) -> SeedSummar
         reset_library_data(db)
 
     summary = SeedSummary()
+    summary.csv_path = str(csv_path)
     if not csv_path.exists():
         raise FileNotFoundError(f"CSV file not found: {csv_path}")
 
@@ -231,12 +248,14 @@ def seed_from_csv(db: Session, csv_path: Path, reset: bool = True) -> SeedSummar
         summary.active_loans += 1
 
     db.commit()
+    write_seed_summary(summary)
     return summary
 
 
 def seed_demo_data(db: Session) -> SeedSummary:
     reset_library_data(db)
     summary = SeedSummary()
+    summary.csv_path = "demo"
     member = ensure_member(db, {}, "Ana Gomez", summary)
     employee = ensure_employee(db, {}, "Luis Herrera", summary)
     book = BookModel(
@@ -270,4 +289,27 @@ def seed_demo_data(db: Session) -> SeedSummary:
     summary.copies = 2
     summary.active_loans = 1
     db.commit()
+    write_seed_summary(summary)
     return summary
+
+
+def write_seed_summary(summary: SeedSummary) -> None:
+    SUMMARY_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SUMMARY_OUTPUT_PATH.write_text(
+        json.dumps(summary.to_dict(), indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+
+def read_seed_summary() -> dict[str, int | str | None]:
+    if not SUMMARY_OUTPUT_PATH.exists():
+        return {
+            "books": 0,
+            "copies": 0,
+            "members": 0,
+            "employees": 0,
+            "active_loans": 0,
+            "warnings": 0,
+            "csv_path": None,
+        }
+    return json.loads(SUMMARY_OUTPUT_PATH.read_text(encoding="utf-8"))

@@ -102,9 +102,11 @@ class LoanService:
         loan.actual_return_date = return_date
         loan.status = LoanStatus.RETURNED
         book_copy.status = BookCopyStatus.AVAILABLE
+        self.loan_repo.update_loan(loan)
         self.book_copy_repo.update_book_copy(book_copy)
         self.commit()
-        return loan
+        updated = self.loan_repo.get_loan_by_id(loan.loan_id)
+        return self._normalize_status(updated) if updated else loan
 
     def _normalize_status(self, loan: Loan) -> Loan:
         if loan.status == LoanStatus.IN_PROGRESS and loan.is_overdue:

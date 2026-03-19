@@ -26,5 +26,9 @@ class LoanResponse(BaseModel):
     due_date: date
     actual_return_date: date | None
     status: str
+    book_title: str | None = None
+    book_author: str | None = None
+    member_name: str | None = None
+    employee_name: str | None = None
     created_at: datetime | None
     updated_at: datetime | None

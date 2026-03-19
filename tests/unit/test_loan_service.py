@@ -116,6 +116,46 @@ def test_return_loan_success(db_session):
     assert returned.status == "returned"
     assert returned.actual_return_date == date.today()
 
+    reloaded = service.get_loan(loan.loan_id)
+    assert reloaded is not None
+    assert reloaded.status == "returned"
+    assert reloaded.actual_return_date == date.today()
+
+
+def test_returned_loan_allows_new_loan_for_same_copy(db_session):
+    book, member, employee = create_dependencies(db_session)
+    service = LoanService(
+        SqlAlchemyLoanRepository(db_session),
+        SqlAlchemyBookCopyRepository(db_session),
+        SqlAlchemyMemberRepository(db_session),
+        SqlAlchemyEmployeeRepository(db_session),
+        db_session.commit,
+        db_session.rollback,
+    )
+    first = service.create_loan(
+        LoanCreateRequest(
+            book_copy_id=book.first_available_copy_id,
+            member_id=member.member_id,
+            employee_id=employee.employee_id,
+            loan_date=date.today(),
+            due_date=date.today() + timedelta(days=14),
+        )
+    )
+
+    service.return_loan(first.loan_id, LoanReturnRequest())
+
+    second = service.create_loan(
+        LoanCreateRequest(
+            book_copy_id=book.first_available_copy_id,
+            member_id=member.member_id,
+            employee_id=employee.employee_id,
+            loan_date=date.today(),
+            due_date=date.today() + timedelta(days=7),
+        )
+    )
+
+    assert second.status == "in_progress"
+
 
 def test_return_loan_not_found(db_session):
     service = LoanService(
