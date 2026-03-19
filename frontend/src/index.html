@@ -103,14 +103,14 @@
         <div class="drawer-actions">
             <p class="drawer-section-label">Quick actions</p>
             <button class="drawer-item" onclick="window.LibraryUI.showCreateLoanModal(); window.LibraryUI.closeMobileMenu();">
-                <i class="fas fa-hand-holding"></i>
+                <i class="fas fa-book-reader"></i>
                 <div>
                     <p>New loan</p>
                     <small>Issue a book now</small>
                 </div>
             </button>
             <button class="drawer-item" onclick="window.LibraryUI.showReturnBookModal(); window.LibraryUI.closeMobileMenu();">
-                <i class="fas fa-undo"></i>
+                <i class="fas fa-arrow-rotate-left"></i>
                 <div>
                     <p>Return book</p>
                     <small>Record a return</small>
@@ -180,10 +180,10 @@
             <p>Manage loans, returns, and catalog updates in one clean workspace.</p>
             <div class="hero-actions desktop-only">
                 <button class="btn btn-secondary" onclick="window.LibraryUI.showCreateLoanModal()">
-                    <i class="fas fa-hand-holding"></i> New Loan
+                    <i class="fas fa-book-reader"></i> New Loan
                 </button>
                 <button class="btn btn-success" onclick="window.LibraryUI.showReturnBookModal()">
-                    <i class="fas fa-undo"></i> Return Book
+                    <i class="fas fa-arrow-rotate-left"></i> Return Book
                 </button>
                 <button class="btn btn-primary" onclick="window.LibraryUI.showAddBookModal()">
                     <i class="fas fa-plus"></i> Add Book
@@ -191,10 +191,10 @@
             </div>
             <div class="hero-actions mobile-only mobile-hero-actions">
                 <button class="btn btn-secondary" onclick="window.LibraryUI.showCreateLoanModal()">
-                    <i class="fas fa-hand-holding"></i> New Loan
+                    <i class="fas fa-book-reader"></i> New Loan
                 </button>
                 <button class="btn btn-success" onclick="window.LibraryUI.showReturnBookModal()">
-                    <i class="fas fa-undo"></i> Return Book
+                    <i class="fas fa-arrow-rotate-left"></i> Return Book
                 </button>
                 <button class="btn btn-primary" onclick="window.LibraryUI.showAddBookModal()">
                     <i class="fas fa-plus"></i> Add Book
@@ -539,7 +539,7 @@
             </form>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="window.LibraryUI.closeModal('createLoanModal')">Cancel</button>
-                <button class="btn btn-primary" onclick="window.LibraryUI.createLoan()">Create Loan</button>
+                <button class="btn btn-primary" onclick="window.LibraryUI.createLoan()"><i class="fas fa-book-reader"></i> Create Loan</button>
             </div>
         </div>
     </div>
@@ -572,7 +572,7 @@
             </form>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="window.LibraryUI.closeModal('returnBookModal')">Cancel</button>
-                <button class="btn btn-success" onclick="window.LibraryUI.returnBook()">Return Book</button>
+                <button class="btn btn-success" onclick="window.LibraryUI.returnBook()"><i class="fas fa-arrow-rotate-left"></i> Return Book</button>
             </div>
         </div>
     </div>
@@ -661,14 +661,14 @@
     <div class="fab-container mobile-only">
         <div id="fabSheet" class="fab-sheet">
             <button class="fab-sheet-item" onclick="window.LibraryUI.showCreateLoanModal(); window.LibraryUI.closeFabSheet();">
-                <i class="fas fa-hand-holding"></i>
+                <i class="fas fa-book-reader"></i>
                 <div>
                     <p>New loan</p>
                     <small>Issue book</small>
                 </div>
             </button>
             <button class="fab-sheet-item" onclick="window.LibraryUI.showReturnBookModal(); window.LibraryUI.closeFabSheet();">
-                <i class="fas fa-undo"></i>
+                <i class="fas fa-arrow-rotate-left"></i>
                 <div>
                     <p>Return</p>
                     <small>Record return</small>

@@ -105,7 +105,7 @@ export function renderLoansCollection(loans, mode = 'active') {
                     </div>
                     <div class="loan-card-actions">
                         <button class="btn btn-outline" onclick="window.LibraryUI.startReturnFlow('${loan.loan_id}', '${displayText}')">
-                            <i class="fas fa-undo"></i> Register return
+                            <i class="fas fa-arrow-rotate-left"></i> Register return
                         </button>
                     </div>
                 </div>
