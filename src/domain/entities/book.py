@@ -2,18 +2,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from enum import StrEnum
 
+from .book_copy import BookCopy
+from .book_copy_status import BookCopyStatus
 
-class BookCopyStatus(StrEnum):
-    AVAILABLE = "available"
-    LOANED = "loaned"
-    DAMAGED = "damaged"
-    LOST = "lost"
+# Re-export for backward compatibility — importers can still do
+# ``from domain.entities.book import Book, BookCopy, BookCopyStatus``
+__all__ = ["Book", "BookCopy", "BookCopyStatus"]
 
 
 @dataclass
 class Book:
+    """Represents a catalogued title in the library."""
+
     book_id: str
     title: str
     author: str
@@ -26,14 +27,5 @@ class Book:
     total_copies: int = 1
     available_copies: int = 0
     first_available_copy_id: str | None = None
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
-
-
-@dataclass
-class BookCopy:
-    book_copy_id: str
-    book_id: str
-    status: BookCopyStatus
     created_at: datetime | None = None
     updated_at: datetime | None = None

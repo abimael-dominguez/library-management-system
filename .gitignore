@@ -227,3 +227,7 @@ samconfig.toml
 
 # Temporary seed environment
 .transfer_data_env/
+
+
+# data
+data/local/

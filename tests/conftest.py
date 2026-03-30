@@ -6,8 +6,8 @@ import pytest
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.infrastructure import models  # noqa: F401
-from src.infrastructure.database import Base
+from src.infrastructure.persistence import models  # noqa: F401
+from src.infrastructure.persistence.database import Base
 
 
 @pytest.fixture

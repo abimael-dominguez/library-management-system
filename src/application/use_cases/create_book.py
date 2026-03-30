@@ -12,8 +12,8 @@ from ..dtos.book_dto import BookCreateRequest
 from ..interfaces.unit_of_work import UnitOfWork
 
 
-class BookService:
-    """Use case that manages the Book catalogue (create, search, list)."""
+class CreateBookUseCase:
+    """Creates a new book with its initial copies inside a single transaction."""
 
     def __init__(
         self,
@@ -25,19 +25,7 @@ class BookService:
         self._book_copy_repo = book_copy_repo
         self._unit_of_work = unit_of_work
 
-    def list_books(self, limit: int = 50) -> list[Book]:
-        books = self._book_repo.list_books(limit)
-        return [self._enrich(book) for book in books]
-
-    def get_book(self, book_id: str) -> Book | None:
-        book = self._book_repo.get_book_by_id(book_id)
-        return self._enrich(book) if book else None
-
-    def search_books(self, query: str, limit: int = 10) -> list[Book]:
-        books = self._book_repo.search_books(query, limit)
-        return [self._enrich(book) for book in books]
-
-    def create_book(self, payload: BookCreateRequest) -> Book:
+    def execute(self, *, payload: BookCreateRequest) -> Book:
         book_id = str(uuid4())
         book = Book(
             book_id=book_id,
@@ -69,10 +57,6 @@ class BookService:
         created = self._book_repo.get_book_by_id(book_id)
         if not created:
             raise DomainError("Book was created but could not be reloaded.")
-        return self._enrich(created)
-
-    def _enrich(self, book: Book) -> Book:
-        """Attach availability info that requires repository lookups."""
-        book.available_copies = self._book_copy_repo.count_available_copies(book.book_id)
-        book.first_available_copy_id = self._book_copy_repo.get_first_available_copy_id(book.book_id)
-        return book
+        created.available_copies = self._book_copy_repo.count_available_copies(book_id)
+        created.first_available_copy_id = self._book_copy_repo.get_first_available_copy_id(book_id)
+        return created

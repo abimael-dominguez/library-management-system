@@ -8,8 +8,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.infrastructure.database import SessionLocal, init_db
-from src.infrastructure.seed import seed_demo_data, seed_from_csv
+from src.infrastructure.persistence.database import SessionLocal, init_db
+from src.infrastructure.persistence.seed import seed_demo_data, seed_from_csv
 
 
 def parse_args() -> argparse.Namespace:

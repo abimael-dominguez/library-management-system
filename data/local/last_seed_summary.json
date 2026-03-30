@@ -1,9 +1,9 @@
 {
-  "books": 2,
-  "copies": 3,
-  "members": 1,
-  "employees": 1,
-  "active_loans": 1,
-  "warnings": 0,
-  "csv_path": "/private/var/folders/40/cgvzswr17ds_xvxc8cyjv0th0000gp/T/pytest-of-mi20429/pytest-24/test_seed_from_csv_imports_boo0/library.csv"
+  "books": 111,
+  "copies": 115,
+  "members": 34,
+  "employees": 2,
+  "active_loans": 27,
+  "warnings": 7,
+  "csv_path": "/app/data/library-cbg-clean.csv"
 }

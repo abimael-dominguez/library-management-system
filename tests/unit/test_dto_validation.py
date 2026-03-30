@@ -3,9 +3,9 @@ from datetime import date
 import pytest
 from pydantic import ValidationError
 
-from src.application.dto.book_dto import BookCreateRequest
-from src.application.dto.loan_dto import LoanCreateRequest, LoanReturnRequest
-from src.application.dto.member_dto import MemberCreateRequest
+from src.application.dtos.book_dto import BookCreateRequest
+from src.application.dtos.loan_dto import LoanCreateRequest, LoanReturnRequest
+from src.application.dtos.member_dto import MemberCreateRequest
 
 
 def test_book_create_defaults():

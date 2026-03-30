@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
 from uuid import uuid4
 
 from ...domain.entities.book_copy_status import BookCopyStatus
@@ -11,12 +10,12 @@ from ...domain.interfaces.book_copy_repository import BookCopyRepository
 from ...domain.interfaces.employee_repository import EmployeeRepository
 from ...domain.interfaces.loan_repository import LoanRepository
 from ...domain.interfaces.member_repository import MemberRepository
-from ..dtos.loan_dto import LoanCreateRequest, LoanReturnRequest
+from ..dtos.loan_dto import LoanCreateRequest
 from ..interfaces.unit_of_work import UnitOfWork
 
 
-class LoanService:
-    """Use case that manages the full loan lifecycle (create, return, list)."""
+class CreateLoanUseCase:
+    """Creates a new loan, marking the book copy as loaned inside a single transaction."""
 
     def __init__(
         self,
@@ -32,15 +31,7 @@ class LoanService:
         self._employee_repo = employee_repo
         self._unit_of_work = unit_of_work
 
-    def list_loans(self, limit: int = 50) -> list[Loan]:
-        loans = self._loan_repo.list_loans(limit)
-        return [self._normalize_status(loan) for loan in loans]
-
-    def get_loan(self, loan_id: str) -> Loan | None:
-        loan = self._loan_repo.get_loan_by_id(loan_id)
-        return self._normalize_status(loan) if loan else None
-
-    def create_loan(self, payload: LoanCreateRequest) -> Loan:
+    def execute(self, *, payload: LoanCreateRequest) -> Loan:
         if payload.due_date < payload.loan_date:
             raise DomainError("Due date must be on or after the loan date.")
 
@@ -82,35 +73,6 @@ class LoanService:
         created = self._loan_repo.get_loan_by_id(loan.loan_id)
         if not created:
             raise DomainError("Loan was created but could not be reloaded.")
-        return self._normalize_status(created)
-
-    def return_loan(self, loan_id: str, payload: LoanReturnRequest) -> Loan:
-        loan = self._loan_repo.get_loan_by_id(loan_id, for_update=True)
-        if not loan:
-            raise DomainError("Loan not found.")
-        loan = self._normalize_status(loan)
-        if loan.status == LoanStatus.RETURNED:
-            raise DomainError("Loan already returned.")
-
-        book_copy = self._book_copy_repo.get_book_copy_by_id(loan.book_copy_id, for_update=True)
-        if not book_copy:
-            raise DomainError("Book copy not found.")
-
-        return_date = payload.actual_return_date or date.today()
-        if return_date < loan.loan_date:
-            raise DomainError("Return date must be on or after the loan date.")
-
-        loan.actual_return_date = return_date
-        loan.status = LoanStatus.RETURNED
-        book_copy.status = BookCopyStatus.AVAILABLE
-        self._loan_repo.update_loan(loan)
-        self._book_copy_repo.update_book_copy(book_copy)
-        self._unit_of_work.commit()
-        updated = self._loan_repo.get_loan_by_id(loan.loan_id)
-        return self._normalize_status(updated) if updated else loan
-
-    def _normalize_status(self, loan: Loan) -> Loan:
-        """Promote an in-progress loan to OVERDUE when the due date has passed."""
-        if loan.status == LoanStatus.IN_PROGRESS and loan.is_overdue:
-            loan.status = LoanStatus.OVERDUE
-        return loan
+        if created.status == LoanStatus.IN_PROGRESS and created.is_overdue:
+            created.status = LoanStatus.OVERDUE
+        return created

@@ -4,7 +4,7 @@ from datetime import date, timedelta
 
 from fastapi.testclient import TestClient
 
-from src.infrastructure.api import create_app
+from src.infrastructure.api.app import create_app
 
 
 def test_health_endpoint(db_session):
@@ -17,7 +17,7 @@ def test_health_endpoint(db_session):
             pass
 
     app.dependency_overrides.clear()
-    from src.infrastructure.database import get_db
+    from src.infrastructure.persistence.database import get_db
 
     app.dependency_overrides[get_db] = override_get_db
 
@@ -37,7 +37,7 @@ def test_import_summary_endpoint(db_session):
         finally:
             pass
 
-    from src.infrastructure.database import get_db
+    from src.infrastructure.persistence.database import get_db
 
     app.dependency_overrides[get_db] = override_get_db
 
@@ -59,7 +59,7 @@ def test_book_member_loan_flow(db_session):
         finally:
             pass
 
-    from src.infrastructure.database import get_db
+    from src.infrastructure.persistence.database import get_db
 
     app.dependency_overrides[get_db] = override_get_db
 

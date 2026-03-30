@@ -2,8 +2,8 @@ from pathlib import Path
 
 from sqlalchemy import select
 
-from src.infrastructure.models import BookCopyModel, BookModel, EmployeeModel, LoanModel, MemberModel
-from src.infrastructure.seed import seed_from_csv
+from src.infrastructure.persistence.models import BookCopyModel, BookModel, EmployeeModel, LoanModel, MemberModel
+from src.infrastructure.persistence.seed import seed_from_csv
 
 
 def test_seed_from_csv_imports_books_and_active_loans(db_session, tmp_path):
