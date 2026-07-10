@@ -19,6 +19,14 @@ import {
     saveThemePreference
 } from '../infrastructure/storage/preferences.js';
 import {
+    buildBookPayload,
+    buildCreateLoanPayload,
+    buildEmployeePayload,
+    buildMemberPayload,
+    buildReturnPayload,
+    dateInputValue
+} from './form-payloads.js';
+import {
     closeModal,
     showModal
 } from './modals.js';
@@ -41,6 +49,12 @@ import {
     renderStats,
     showToast
 } from './renderers.js';
+import {
+    getCollectionModeForWorkspaceView,
+    renderWorkspaceView,
+    resolveWorkspaceView,
+    scrollWorkspaceToTop
+} from './workspace.js';
 
 const state = createAppState();
 const libraryService = createLibraryService(createApiClient());
@@ -184,26 +198,13 @@ function renderMainCollection() {
 }
 
 function renderViewState() {
-    const currentView = state.currentView || 'home';
-
-    document.querySelectorAll('[data-view]').forEach(section => {
-        const views = section.dataset.view.split(/\s+/).filter(Boolean);
-        section.classList.toggle('view-hidden', !views.includes(currentView));
-    });
-
-    document.querySelectorAll('[data-nav-target]').forEach(item => {
-        item.classList.toggle('active', item.dataset.navTarget === currentView);
-    });
-    document.body.dataset.workspaceView = currentView;
+    renderWorkspaceView(state.currentView || 'home');
 }
 
 function applyView(view, options = {}) {
-    state.currentView = view;
+    state.currentView = resolveWorkspaceView(view);
     renderViewState();
-
-    if (options.scroll !== false) {
-        window.scrollTo({ top: 0, behavior: options.smooth === false ? 'auto' : 'smooth' });
-    }
+    scrollWorkspaceToTop({ scroll: options.scroll !== false, smooth: options.smooth !== false });
 }
 
 function navigateTo(view) {
@@ -221,16 +222,10 @@ function navigateTo(view) {
 }
 
 function navigateToWorkspace(view) {
-    const allowedViews = ['home', 'catalog', 'loans', 'members', 'more'];
-    const nextView = allowedViews.includes(view) ? view : 'home';
-
-    if (nextView === 'home' || nextView === 'catalog') {
-        state.collectionMode = 'books';
-        renderMainCollection();
-    }
-
-    if (nextView === 'loans') {
-        state.collectionMode = 'active_loans';
+    const nextView = resolveWorkspaceView(view);
+    const nextCollectionMode = getCollectionModeForWorkspaceView(nextView, state.collectionMode);
+    if (nextCollectionMode !== state.collectionMode) {
+        state.collectionMode = nextCollectionMode;
         renderMainCollection();
     }
 
@@ -273,15 +268,10 @@ function showAddBookModal() {
 }
 
 function showCreateLoanModal() {
-    const today = new Date().toISOString().split('T')[0];
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 21);
-    const dueDateStr = dueDate.toISOString().split('T')[0];
-
     const loanDateInput = document.querySelector('input[name="loan_date"]');
     const dueDateInput = document.querySelector('input[name="due_date"]');
-    if (loanDateInput) loanDateInput.value = today;
-    if (dueDateInput) dueDateInput.value = dueDateStr;
+    if (loanDateInput) loanDateInput.value = dateInputValue();
+    if (dueDateInput) dueDateInput.value = dateInputValue(21);
 
     if (state.employees.length === 1) {
         const employee = state.employees[0];
@@ -299,10 +289,9 @@ function showCreateLoanModal() {
 }
 
 function showReturnBookModal() {
-    const today = new Date().toISOString().split('T')[0];
     const returnDateInput = document.querySelector('input[name="return_date"]');
     if (returnDateInput) {
-        returnDateInput.value = today;
+        returnDateInput.value = dateInputValue();
     }
     showModal('returnBookModal');
 }
@@ -339,21 +328,11 @@ function startReturnFlow(loanId, displayText) {
 }
 
 async function createLoan() {
-    const form = document.getElementById('createLoanForm');
-    const formData = new FormData(form);
-
-    if (!formData.get('book_copy_id') || !formData.get('member_id') || !formData.get('loan_date') || !formData.get('due_date')) {
+    const { isValid, payload } = buildCreateLoanPayload();
+    if (!isValid) {
         showToast(t('toast.loanRequired'), 'error');
         return;
     }
-
-    const payload = {
-        book_copy_id: formData.get('book_copy_id'),
-        member_id: formData.get('member_id'),
-        employee_id: formData.get('employee_id') || null,
-        loan_date: formData.get('loan_date'),
-        due_date: formData.get('due_date')
-    };
 
     try {
         await libraryService.createLoan(payload);
@@ -463,19 +442,10 @@ function selectMemberForLoan(memberId, name) {
 }
 
 async function returnBook() {
-    const form = document.getElementById('returnBookForm');
-    const formData = new FormData(form);
-    const loanId = formData.get('loan_id');
-    const returnDate = formData.get('return_date');
-
-    if (!loanId) {
+    const { isValid, loanId, payload } = buildReturnPayload();
+    if (!isValid) {
         showToast(t('toast.returnSelectLoan'), 'error');
         return;
-    }
-
-    const payload = {};
-    if (returnDate) {
-        payload.actual_return_date = returnDate;
     }
 
     try {
@@ -490,18 +460,11 @@ async function returnBook() {
 }
 
 async function addBook() {
-    const form = document.getElementById('addBookForm');
-    const formData = new FormData(form);
-    const payload = {
-        title: formData.get('title'),
-        author: formData.get('author'),
-        isbn: formData.get('isbn') || null,
-        publisher: formData.get('publisher') || null,
-        publication_year: formData.get('publication_year') ? parseInt(formData.get('publication_year'), 10) : null,
-        pages: formData.get('pages') ? parseInt(formData.get('pages'), 10) : null,
-        max_loan_weeks: parseInt(formData.get('max_loan_weeks'), 10) || 3,
-        total_copies: parseInt(formData.get('total_copies'), 10) || 1
-    };
+    const payload = buildBookPayload();
+    if (!payload) {
+        showToast(t('toast.bookAddFailed'), 'error');
+        return;
+    }
 
     try {
         await libraryService.createBook(payload);
@@ -525,15 +488,11 @@ function showAddEmployeeModal() {
 }
 
 async function addMember() {
-    const form = document.getElementById('addMemberForm');
-    const formData = new FormData(form);
-    const payload = {
-        first_name: formData.get('first_name'),
-        last_name: formData.get('last_name'),
-        email: formData.get('email') || null,
-        address: formData.get('address') || null,
-        phone: formData.get('phone') || null
-    };
+    const payload = buildMemberPayload();
+    if (!payload) {
+        showToast(t('toast.memberAddFailed'), 'error');
+        return;
+    }
 
     try {
         await libraryService.createMember(payload);
@@ -547,13 +506,11 @@ async function addMember() {
 }
 
 async function addEmployee() {
-    const form = document.getElementById('addEmployeeForm');
-    const formData = new FormData(form);
-    const payload = {
-        first_name: formData.get('first_name'),
-        last_name: formData.get('last_name'),
-        position: formData.get('position')
-    };
+    const payload = buildEmployeePayload();
+    if (!payload) {
+        showToast(t('toast.employeeAddFailed'), 'error');
+        return;
+    }
 
     try {
         await libraryService.createEmployee(payload);
