@@ -161,7 +161,7 @@ function renderAll() {
 
 function renderMainCollection() {
     if (state.collectionMode === 'active_loans') {
-        const activeLoans = state.loans.filter(loan => loan.status === 'in_progress');
+        const activeLoans = state.loans.filter(loan => ['in_progress', 'overdue'].includes(loan.status));
         renderCollectionHeader('active_loans');
         renderLoansCollection(activeLoans, 'active');
         return;
@@ -623,7 +623,7 @@ function filterLoans(mode) {
     renderMainCollection();
     const message = mode === 'overdue'
         ? 'Showing overdue loans'
-        : 'Showing active loans';
+        : 'Showing open loans';
     showToast(message, 'info');
 }
 

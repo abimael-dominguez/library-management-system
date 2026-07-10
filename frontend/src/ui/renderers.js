@@ -51,7 +51,7 @@ export function renderLoansCollection(loans, mode = 'active') {
     if (loans.length === 0) {
         container.innerHTML = mode === 'overdue'
             ? renderEmptyState('shield-heart', 'No overdue loans', 'Everything is on track right now. No active loans need follow-up.')
-            : renderEmptyState('receipt', 'No active loans', 'There are no books in circulation yet. New loans will appear here.');
+            : renderEmptyState('receipt', 'No open loans', 'There are no books currently out. New loans will appear here.');
         return;
     }
 
@@ -230,7 +230,7 @@ export function renderStats(state) {
     const overdueLoans = document.getElementById('overdueLoans');
 
     if (totalBooks) totalBooks.textContent = state.books.length;
-    if (activeLoans) activeLoans.textContent = state.loans.filter(loan => loan.status === 'in_progress').length;
+    if (activeLoans) activeLoans.textContent = state.loans.filter(loan => ['in_progress', 'overdue'].includes(loan.status)).length;
     if (totalMembers) totalMembers.textContent = state.members.length;
     if (overdueLoans) overdueLoans.textContent = state.loans.filter(loan => loan.status === 'overdue').length;
 }
@@ -247,7 +247,7 @@ export function renderCollectionHeader(mode = 'books') {
     if (mode === 'active_loans') {
         eyebrow.textContent = 'Circulation';
         title.textContent = 'Loaned books';
-        description.textContent = 'Operational list of active loans with quick access to returns.';
+        description.textContent = 'Operational list of open loans, including overdue items, with quick access to returns.';
         return;
     }
 
