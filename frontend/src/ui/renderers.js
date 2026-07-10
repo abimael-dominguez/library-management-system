@@ -278,7 +278,7 @@ export function renderMembersList(members) {
         <div class="mini-list-item">
             <div>
                 <strong>${escapeHtml(member.first_name)} ${escapeHtml(member.last_name)}</strong>
-                <p>${escapeHtml(member.email)}</p>
+                <p>${escapeHtml(member.email || 'No email')}</p>
             </div>
             <span class="badge badge-secondary">${escapeHtml(member.status)}</span>
         </div>

@@ -525,7 +525,7 @@ async function addMember() {
     const payload = {
         first_name: formData.get('first_name'),
         last_name: formData.get('last_name'),
-        email: formData.get('email'),
+        email: formData.get('email') || null,
         address: formData.get('address') || null,
         phone: formData.get('phone') || null
     };
