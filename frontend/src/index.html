@@ -7,8 +7,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="styles.css" rel="stylesheet">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="alternate icon" href="favicon.ico" sizes="any">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Library">
@@ -95,7 +98,7 @@
                     <div class="search-container command-search">
                         <i class="fas fa-search search-icon"></i>
                         <label class="sr-only" for="searchInput" data-i18n="workspace.searchLabel">Búsqueda global</label>
-                        <input type="text" class="search-input" id="searchInput"
+                        <input type="text" class="search-input" id="searchInput" autocomplete="off"
                                data-i18n-placeholder="workspace.searchPlaceholder"
                                placeholder="Buscar título, autor o ISBN">
                         <div id="searchResults" class="search-results"></div>
@@ -331,41 +334,41 @@
             </div>
             <form id="addBookForm" class="modal-body">
                 <div class="form-group">
-                    <label data-i18n="forms.book.title">Título</label>
-                    <input type="text" name="title" required>
+                    <label for="addBookTitle" data-i18n="forms.book.title">Título</label>
+                    <input id="addBookTitle" type="text" name="title" autocomplete="off" required>
                 </div>
                 <div class="form-group">
-                    <label data-i18n="forms.book.author">Autor</label>
-                    <input type="text" name="author" required>
+                    <label for="addBookAuthor" data-i18n="forms.book.author">Autor</label>
+                    <input id="addBookAuthor" type="text" name="author" autocomplete="off" required>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label data-i18n="forms.book.isbn">ISBN</label>
-                        <input type="text" name="isbn">
+                        <label for="addBookIsbn" data-i18n="forms.book.isbn">ISBN</label>
+                        <input id="addBookIsbn" type="text" name="isbn" autocomplete="off">
                     </div>
                     <div class="form-group">
-                        <label data-i18n="forms.book.publisher">Editorial</label>
-                        <input type="text" name="publisher">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label data-i18n="forms.book.year">Año</label>
-                        <input type="number" name="publication_year" min="1000" max="2100">
-                    </div>
-                    <div class="form-group">
-                        <label data-i18n="forms.book.pages">Páginas</label>
-                        <input type="number" name="pages" min="1">
+                        <label for="addBookPublisher" data-i18n="forms.book.publisher">Editorial</label>
+                        <input id="addBookPublisher" type="text" name="publisher" autocomplete="off">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label data-i18n="forms.book.loanWeeks">Semanas de préstamo</label>
-                        <input type="number" name="max_loan_weeks" value="3" min="1" max="52">
+                        <label for="addBookYear" data-i18n="forms.book.year">Año</label>
+                        <input id="addBookYear" type="number" name="publication_year" min="1000" max="2100" autocomplete="off">
                     </div>
                     <div class="form-group">
-                        <label data-i18n="forms.book.copies">Copias</label>
-                        <input type="number" name="total_copies" value="1" min="1">
+                        <label for="addBookPages" data-i18n="forms.book.pages">Páginas</label>
+                        <input id="addBookPages" type="number" name="pages" min="1" autocomplete="off">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="addBookLoanWeeks" data-i18n="forms.book.loanWeeks">Semanas de préstamo</label>
+                        <input id="addBookLoanWeeks" type="number" name="max_loan_weeks" value="3" min="1" max="52" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="addBookCopies" data-i18n="forms.book.copies">Copias</label>
+                        <input id="addBookCopies" type="number" name="total_copies" value="1" min="1" autocomplete="off">
                     </div>
                 </div>
             </form>
@@ -389,37 +392,37 @@
             </div>
             <form id="createLoanForm" class="modal-body">
                 <div class="form-group">
-                    <label data-i18n="forms.loan.book">Buscar libro</label>
+                    <label for="bookSearch" data-i18n="forms.loan.book">Buscar libro</label>
                     <div class="search-container">
-                        <input type="text" id="bookSearch" data-i18n-placeholder="forms.loan.bookPlaceholder" placeholder="Título o autor..." onkeyup="window.LibraryUI.searchBooksForLoan(this.value)">
+                        <input type="text" id="bookSearch" autocomplete="off" data-i18n-placeholder="forms.loan.bookPlaceholder" placeholder="Título o autor..." onkeyup="window.LibraryUI.searchBooksForLoan(this.value)">
                         <div id="bookSearchResults" class="search-results"></div>
                     </div>
                     <input type="hidden" name="book_copy_id" required>
                 </div>
                 <div class="form-group">
-                    <label data-i18n="forms.loan.member">Buscar miembro</label>
+                    <label for="memberSearch" data-i18n="forms.loan.member">Buscar miembro</label>
                     <div class="search-container">
-                        <input type="text" id="memberSearch" data-i18n-placeholder="forms.loan.memberPlaceholder" placeholder="Nombre del miembro..." onkeyup="window.LibraryUI.searchMembersForLoan(this.value)">
+                        <input type="text" id="memberSearch" autocomplete="off" data-i18n-placeholder="forms.loan.memberPlaceholder" placeholder="Nombre del miembro..." onkeyup="window.LibraryUI.searchMembersForLoan(this.value)">
                         <div id="memberSearchResults" class="search-results"></div>
                     </div>
                     <input type="hidden" name="member_id" required>
                 </div>
                 <div class="form-group">
-                    <label data-i18n="forms.loan.employee">Empleado</label>
+                    <label for="employeeSearch" data-i18n="forms.loan.employee">Empleado</label>
                     <div class="search-container">
-                        <input type="text" id="employeeSearch" data-i18n-placeholder="forms.loan.employeePlaceholder" placeholder="Buscar empleado..." onkeyup="window.LibraryUI.searchEmployeesForLoan(this.value)">
+                        <input type="text" id="employeeSearch" autocomplete="off" data-i18n-placeholder="forms.loan.employeePlaceholder" placeholder="Buscar empleado..." onkeyup="window.LibraryUI.searchEmployeesForLoan(this.value)">
                         <div id="employeeSearchResults" class="search-results"></div>
                     </div>
                     <input type="hidden" name="employee_id">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label data-i18n="forms.loan.loanDate">Fecha de préstamo</label>
-                        <input type="date" name="loan_date" required>
+                        <label for="createLoanDate" data-i18n="forms.loan.loanDate">Fecha de préstamo</label>
+                        <input id="createLoanDate" type="date" name="loan_date" autocomplete="off" required>
                     </div>
                     <div class="form-group">
-                        <label data-i18n="forms.loan.dueDate">Fecha límite</label>
-                        <input type="date" name="due_date" required>
+                        <label for="createLoanDueDate" data-i18n="forms.loan.dueDate">Fecha límite</label>
+                        <input id="createLoanDueDate" type="date" name="due_date" autocomplete="off" required>
                     </div>
                 </div>
             </form>
@@ -446,16 +449,16 @@
             </div>
             <form id="returnBookForm" class="modal-body">
                 <div class="form-group">
-                    <label data-i18n="forms.return.loan">Buscar préstamo activo</label>
+                    <label for="loanSearch" data-i18n="forms.return.loan">Buscar préstamo activo</label>
                     <div class="search-container">
-                        <input type="text" id="loanSearch" data-i18n-placeholder="forms.return.loanPlaceholder" placeholder="Libro o miembro..." onkeyup="window.LibraryUI.searchActiveLoans(this.value)">
+                        <input type="text" id="loanSearch" autocomplete="off" data-i18n-placeholder="forms.return.loanPlaceholder" placeholder="Libro o miembro..." onkeyup="window.LibraryUI.searchActiveLoans(this.value)">
                         <div id="loanSearchResults" class="search-results"></div>
                     </div>
                     <input type="hidden" name="loan_id" required>
                 </div>
                 <div class="form-group">
-                    <label data-i18n="forms.return.returnDate">Fecha de devolución</label>
-                    <input type="date" name="return_date">
+                    <label for="returnDate" data-i18n="forms.return.returnDate">Fecha de devolución</label>
+                    <input id="returnDate" type="date" name="return_date" autocomplete="off">
                 </div>
             </form>
             <div class="modal-footer">
@@ -482,25 +485,25 @@
             <form id="addMemberForm" class="modal-body">
                 <div class="form-row">
                     <div class="form-group">
-                        <label data-i18n="forms.member.firstName">Nombre</label>
-                        <input type="text" name="first_name" required>
+                        <label for="memberFirstName" data-i18n="forms.member.firstName">Nombre</label>
+                        <input id="memberFirstName" type="text" name="first_name" autocomplete="given-name" required>
                     </div>
                     <div class="form-group">
-                        <label data-i18n="forms.member.lastName">Apellido</label>
-                        <input type="text" name="last_name" required>
+                        <label for="memberLastName" data-i18n="forms.member.lastName">Apellido</label>
+                        <input id="memberLastName" type="text" name="last_name" autocomplete="family-name" required>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label data-i18n="forms.member.email">Email</label>
-                    <input type="email" name="email">
+                    <label for="memberEmail" data-i18n="forms.member.email">Email</label>
+                    <input id="memberEmail" type="email" name="email" autocomplete="email">
                 </div>
                 <div class="form-group">
-                    <label data-i18n="forms.member.address">Dirección</label>
-                    <input type="text" name="address">
+                    <label for="memberAddress" data-i18n="forms.member.address">Dirección</label>
+                    <input id="memberAddress" type="text" name="address" autocomplete="street-address">
                 </div>
                 <div class="form-group">
-                    <label data-i18n="forms.member.phone">Teléfono</label>
-                    <input type="text" name="phone">
+                    <label for="memberPhone" data-i18n="forms.member.phone">Teléfono</label>
+                    <input id="memberPhone" type="text" name="phone" autocomplete="tel">
                 </div>
             </form>
             <div class="modal-footer">
@@ -524,17 +527,17 @@
             <form id="addEmployeeForm" class="modal-body">
                 <div class="form-row">
                     <div class="form-group">
-                        <label data-i18n="forms.member.firstName">Nombre</label>
-                        <input type="text" name="first_name" required>
+                        <label for="employeeFirstName" data-i18n="forms.member.firstName">Nombre</label>
+                        <input id="employeeFirstName" type="text" name="first_name" autocomplete="given-name" required>
                     </div>
                     <div class="form-group">
-                        <label data-i18n="forms.member.lastName">Apellido</label>
-                        <input type="text" name="last_name" required>
+                        <label for="employeeLastName" data-i18n="forms.member.lastName">Apellido</label>
+                        <input id="employeeLastName" type="text" name="last_name" autocomplete="family-name" required>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label data-i18n="forms.employee.position">Cargo</label>
-                    <input type="text" name="position" required>
+                    <label for="employeePosition" data-i18n="forms.employee.position">Cargo</label>
+                    <input id="employeePosition" type="text" name="position" autocomplete="organization-title" required>
                 </div>
             </form>
             <div class="modal-footer">
