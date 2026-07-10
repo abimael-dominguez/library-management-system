@@ -55,7 +55,7 @@ export function renderBooks(books) {
                     ${renderAvailability(book)}
                 </div>
                 <div class="row-actions">
-                    <button class="btn btn-primary compact" ${canLoan ? '' : 'disabled'} onclick="window.LibraryUI.startLoanFlow('${availableCopyId}', '${encodeDisplayText(title)}')">
+                    <button type="button" class="btn btn-primary compact" ${canLoan ? '' : 'disabled'} onclick="window.LibraryUI.startLoanFlow('${availableCopyId}', '${encodeDisplayText(title)}')">
                         <i class="fas fa-book-reader"></i>
                         <span>${escapeHtml(t('actions.createLoan'))}</span>
                     </button>
@@ -102,7 +102,7 @@ export function renderLoansCollection(loans, mode = 'active') {
                     </div>
                 </div>
                 <div class="row-actions">
-                    <button class="btn ${isOverdue ? 'btn-warning' : 'btn-success'} compact" onclick="window.LibraryUI.startReturnFlow('${loan.loan_id}', '${displayText}')">
+                    <button type="button" class="btn ${isOverdue ? 'btn-warning' : 'btn-success'} compact" onclick="window.LibraryUI.startReturnFlow('${loan.loan_id}', '${displayText}')">
                         <i class="fas fa-arrow-rotate-left"></i>
                         <span>${escapeHtml(t('actions.registerReturn'))}</span>
                     </button>
@@ -122,7 +122,7 @@ export function renderBookSearchResults(books) {
         resultsContainer.innerHTML = `<div class="search-result-item">${escapeHtml(t('empty.searchBooks'))}</div>`;
     } else {
         resultsContainer.innerHTML = books.map(book => `
-            <button class="search-result-item" onclick="window.LibraryUI.selectBook('${book.book_id}')">
+            <button type="button" class="search-result-item" onclick="window.LibraryUI.selectBook('${book.book_id}')">
                 <strong>${escapeHtml(book.title)}</strong>
                 <span>${escapeHtml(t('book.byAuthor', { author: book.author }))} · ${escapeHtml(t('book.availableCount', { available: book.available_copies || 0 }))}</span>
             </button>
@@ -151,7 +151,7 @@ export function renderLoanSearchResults(loans) {
         resultsContainer.innerHTML = loans.map(loan => {
             const label = encodeDisplayText(`${loan.book_title || loan.loan_id} · ${loan.member_name || t('loan.noMember')}`);
             return `
-                <button class="search-result-item" onclick="window.LibraryUI.selectLoanForReturn('${loan.loan_id}', '${label}')">
+                <button type="button" class="search-result-item" onclick="window.LibraryUI.selectLoanForReturn('${loan.loan_id}', '${label}')">
                     <strong>${escapeHtml(loan.book_title || t('app.empty'))}</strong>
                     <span>${escapeHtml(loan.member_name || t('loan.noMember'))} · ${escapeHtml(getStatusLabel(loan.status))} · ${escapeHtml(t('loan.dueDate'))}: ${escapeHtml(loan.due_date || 'N/A')}</span>
                 </button>
@@ -172,7 +172,7 @@ export function renderLoanBookResults(books) {
         resultsContainer.innerHTML = `<div class="search-result-item">${escapeHtml(t('empty.searchBooks'))}</div>`;
     } else {
         resultsContainer.innerHTML = books.map(book => `
-            <button class="search-result-item" onclick="window.LibraryUI.selectBookForLoan('${book.first_available_copy_id || ''}', '${encodeDisplayText(book.title || '')}')">
+            <button type="button" class="search-result-item" onclick="window.LibraryUI.selectBookForLoan('${book.first_available_copy_id || ''}', '${encodeDisplayText(book.title || '')}')">
                 <strong>${escapeHtml(book.title)}</strong>
                 <span>${escapeHtml(t('book.byAuthor', { author: book.author }))} · ${escapeHtml(t('book.availableCount', { available: book.available_copies || 0 }))}</span>
             </button>
@@ -192,7 +192,7 @@ export function renderMemberSearchResults(members) {
         resultsContainer.innerHTML = `<div class="search-result-item">${escapeHtml(t('empty.searchMembers'))}</div>`;
     } else {
         resultsContainer.innerHTML = members.map(member => `
-            <button class="search-result-item" onclick="window.LibraryUI.selectMemberForLoan('${member.id}', '${encodeDisplayText(member.name || '')}')">
+            <button type="button" class="search-result-item" onclick="window.LibraryUI.selectMemberForLoan('${member.id}', '${encodeDisplayText(member.name || '')}')">
                 <strong>${escapeHtml(member.name)}</strong>
             </button>
         `).join('');
@@ -213,7 +213,7 @@ export function renderEmployeeSearchResults(employees) {
         resultsContainer.innerHTML = employees.map(employee => {
             const name = `${employee.first_name} ${employee.last_name}`;
             return `
-                <button class="search-result-item" onclick="window.LibraryUI.selectEmployeeForLoan('${employee.employee_id}', '${encodeDisplayText(name)}')">
+                <button type="button" class="search-result-item" onclick="window.LibraryUI.selectEmployeeForLoan('${employee.employee_id}', '${encodeDisplayText(name)}')">
                     <strong>${escapeHtml(name)}</strong>
                     <span>${escapeHtml(employee.position || t('app.empty'))}</span>
                 </button>

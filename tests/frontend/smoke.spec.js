@@ -107,6 +107,23 @@ test('catalog search, navigation, and circulation modals work', async ({ page })
   assertNoCriticalNoise();
 });
 
+test('selecting a loan book result does not submit or reload the form', async ({ page }) => {
+  const assertNoCriticalNoise = await openApp(page);
+
+  await page.locator('.action-loan:visible').first().click();
+  await expect(page.locator('#createLoanModal')).toHaveClass(/active/);
+
+  await page.locator('#bookSearch').pressSequentially('gracia');
+  await expect(page.locator('#bookSearchResults')).toContainText(/gracia/i);
+  await page.locator('#bookSearchResults .search-result-item').first().click();
+
+  await expect(page.locator('#createLoanModal')).toHaveClass(/active/);
+  await expect(page.locator('input[name="book_copy_id"]')).not.toHaveValue('');
+  expect(new URL(page.url()).search).toBe('');
+
+  assertNoCriticalNoise();
+});
+
 test('language switch persists after reload', async ({ page }) => {
   const assertNoCriticalNoise = await openApp(page, 'es');
 
