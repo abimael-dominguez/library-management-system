@@ -6,6 +6,33 @@
 
 Local-first library management system built with FastAPI, SQLAlchemy, and a static frontend. The current phase is focused on local development and manual testing with SQLite, while keeping the application ready to switch to PostgreSQL later through configuration.
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Current Features](#current-features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Documentation](#documentation)
+- [Prerequisites](#prerequisites)
+- [Recommended Docker Workflow](#recommended-docker-workflow)
+- [Operational Command Reference](#operational-command-reference)
+  - [Quick lookup](#quick-lookup)
+  - [Daily workflow](#daily-workflow)
+  - [Logs](#logs)
+  - [Container status](#container-status)
+  - [Builds](#builds)
+  - [Data import](#data-import)
+  - [Tests](#tests)
+- [Local Development Without Docker](#local-development-without-docker)
+- [Common API Checks](#common-api-checks)
+- [Test Commands](#test-commands)
+- [Environment Variables](#environment-variables)
+- [API Surface](#api-surface)
+- [Manual Smoke Test](#manual-smoke-test)
+- [Example API Requests](#example-api-requests)
+- [Notes](#notes)
+- [Future Direction](#future-direction)
+
 ## Overview
 
 - Backend API: FastAPI application in `src/`
@@ -121,22 +148,106 @@ The seed script is intentionally explicit and local-only: it refuses to run outs
 docker compose down --remove-orphans
 ```
 
-## Docker Command Reference
+## Operational Command Reference
 
-### Daily start
+These are the most useful commands for local development. Prefer the Docker workflow unless you are specifically debugging Python environment behavior outside containers.
+
+### Quick lookup
+
+| Task | Command |
+| --- | --- |
+| Create `.env` | `cp .env.example .env` |
+| Start or refresh app | `docker compose up -d --build api frontend --remove-orphans` |
+| Seed local database | `docker compose run --rm api python scripts/seed_local_db.py` |
+| Follow API and frontend logs | `docker compose logs -f --tail=100 api frontend` |
+| Show container status | `docker compose ps` |
+| Restart services | `docker compose restart api frontend` |
+| Stop services | `docker compose down --remove-orphans` |
+| Run tests | `docker compose run --rm test` |
+
+### Daily workflow
+
+Start or refresh the app:
 
 ```bash
 docker compose up -d --build api frontend --remove-orphans
+```
+
+Rebuild the local SQLite data from the CSV:
+
+```bash
 docker compose run --rm api python scripts/seed_local_db.py
 ```
 
-### Daily stop
+Open the app:
+
+- Frontend: [http://localhost:8080](http://localhost:8080)
+- API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Health check: [http://localhost:8000/health](http://localhost:8000/health)
+
+Stop the app:
 
 ```bash
 docker compose down --remove-orphans
 ```
 
-### Rebuild only the API image
+### Logs
+
+Follow API and frontend logs together:
+
+```bash
+docker compose logs -f --tail=100 api frontend
+```
+
+Follow only API logs:
+
+```bash
+docker compose logs -f --tail=100 api
+```
+
+Follow only frontend logs:
+
+```bash
+docker compose logs -f --tail=100 frontend
+```
+
+Show recent logs without following:
+
+```bash
+docker compose logs --tail=100 api frontend
+```
+
+Press `Ctrl+C` to exit log following. This only closes the log viewer; it does not stop the containers.
+
+### Container status
+
+List running project containers:
+
+```bash
+docker compose ps
+```
+
+Restart the running services:
+
+```bash
+docker compose restart api frontend
+```
+
+Stop and remove project containers:
+
+```bash
+docker compose down --remove-orphans
+```
+
+### Builds
+
+Start services and rebuild the API image if needed:
+
+```bash
+docker compose up -d --build api frontend --remove-orphans
+```
+
+Rebuild only the API image:
 
 ```bash
 docker compose build api
@@ -144,13 +255,38 @@ docker compose build api
 
 Use this when you want to rebuild without starting or recreating containers. For normal local work, prefer `docker compose up -d --build api frontend --remove-orphans`.
 
-### Rebuild local data from the CSV
+Use `--build` after changes to files copied into the API image, especially:
+
+- `scripts/`
+- `requirements.txt`
+- `Dockerfile`
+- `pytest.ini`
+
+Changes inside `src/` are normally picked up by the API reload process, but the recommended start command includes `--build` to avoid stale image confusion.
+
+The frontend does not have a separate build step right now. Docker serves the static files mounted from `frontend/src`, so frontend changes usually only require a browser refresh.
+
+### Data import
 
 ```bash
 docker compose run --rm api python scripts/seed_local_db.py
 ```
 
-### Run tests with Docker
+Optional seed variants:
+
+```bash
+docker compose run --rm api python scripts/seed_local_db.py --csv data/library-cbg-clean.csv
+docker compose run --rm api python scripts/seed_local_db.py --demo
+docker compose run --rm api python scripts/seed_local_db.py --no-rebuild-schema
+```
+
+Review the last import summary:
+
+```bash
+curl http://localhost:8000/import-summary
+```
+
+### Tests
 
 ```bash
 docker compose run --rm test
