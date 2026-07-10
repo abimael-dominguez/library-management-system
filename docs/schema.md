@@ -163,14 +163,14 @@ Overdue note:
 
 ## Current Implementation Notes
 
-The current SQLAlchemy implementation in `src/infrastructure/models.py` adds the following important details:
+The current SQLAlchemy implementation in `src/infrastructure/persistence/models.py` adds the following important details:
 
 - Timestamp columns are managed through a shared mixin
 - Status fields are enforced through `CHECK` constraints
 - The one-active-loan-per-copy rule is enforced through the filtered unique index `ix_loan_one_active_copy`
 - That filtered unique index is defined for both SQLite and PostgreSQL in SQLAlchemy
 - Primary keys are application-generated strings, not auto-increment integers
-- The CSV seed/import path rebuilds the local schema before importing because the project does not yet use migrations
+- The local seed script can rebuild the local schema before importing because the project does not yet use migrations
 - The seed path skips incomplete active loans instead of inventing borrowers or loan dates, and records row-level issues in `data/local/last_seed_summary.json`
 
 ## SQLite And PostgreSQL Notes
@@ -195,6 +195,6 @@ The logical schema is meant to stay the same, but some implementation behavior m
 
 ## Recommendation
 
-For current work and future production migration, use this document as the logical schema reference and treat `src/infrastructure/models.py` as the implementation reference.
+For current work and future production migration, use this document as the logical schema reference and treat `src/infrastructure/persistence/models.py` as the implementation reference.
 
 If PostgreSQL becomes the production target, the next useful step will be to align `create_tables.sql` or replace it with proper migrations so the documented schema, ORM schema, and deployment schema all match.

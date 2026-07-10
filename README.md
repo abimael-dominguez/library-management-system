@@ -103,7 +103,7 @@ docker compose run --rm api python scripts/seed_local_db.py
 
 By default, this imports `data/library-cbg-clean.csv`, recreates the local library data, and writes the import summary.
 
-This project currently works reliably when the API and frontend containers are already running before the seed command is executed.
+The seed script is intentionally explicit and local-only: it refuses to run outside `APP_ENV=local` or `APP_ENV=test` unless `--force` is passed. After seeding, review `data/local/last_seed_summary.json` or `GET /import-summary` for skipped rows and data-quality warnings.
 
 ### 4. Open the application
 
@@ -149,6 +149,7 @@ Optional variants:
 ```bash
 python scripts/seed_local_db.py --csv data/library-cbg-clean.csv
 python scripts/seed_local_db.py --demo
+python scripts/seed_local_db.py --no-rebuild-schema
 ```
 
 ### 4. Start the backend
@@ -183,6 +184,12 @@ docker compose down --remove-orphans
 docker compose run --rm api python scripts/seed_local_db.py
 ```
 
+### Review import warnings
+
+```bash
+curl http://localhost:8000/import-summary
+```
+
 ### Run tests with Docker
 
 ```bash
@@ -214,6 +221,7 @@ Key behavior:
 - `DATABASE_URL` points to SQLite locally and can later point to PostgreSQL
 - `AUTO_CREATE_DB=true` creates the schema automatically on startup
 - `CORS_ORIGINS` allows the local frontend to call the API
+- Seeding is not automatic on API startup; run `scripts/seed_local_db.py` explicitly for local data resets
 
 ## API Surface
 
