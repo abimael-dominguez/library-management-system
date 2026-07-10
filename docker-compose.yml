@@ -37,6 +37,11 @@ services:
       - ./alembic.ini:/app/alembic.ini
       - ./data:/app/data
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   frontend:
     image: python:3.11-slim
@@ -47,9 +52,36 @@ services:
     volumes:
       - ./frontend/src:/site:ro
     command: python -m http.server 8080 --directory /site
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080', timeout=2)\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  seed:
+    build: .
+    profiles:
+      - tools
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      - ./scripts:/app/scripts
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+      - ./data:/app/data
+    environment:
+      PYTHONPATH: /app:/app/src
+      APP_ENV: local
+      DATABASE_URL: postgresql+psycopg://lms:lms@db:5432/lms
+      AUTO_CREATE_DB: "false"
+    command: sh -c "alembic upgrade head && python scripts/seed_local_db.py"
 
   test:
     build: .
+    profiles:
+      - tools
     depends_on:
       db:
         condition: service_healthy
@@ -66,6 +98,25 @@ services:
       DATABASE_URL: postgresql+psycopg://lms:lms@db:5432/lms_test
       AUTO_CREATE_DB: "false"
     command: sh -c "python scripts/reset_database.py && alembic upgrade head && pytest tests/unit tests/functional --cov=src/application --cov=src/domain --cov=src/infrastructure --cov-report=term-missing --cov-report=html"
+
+  frontend-test:
+    image: mcr.microsoft.com/playwright:v1.61.1-noble
+    profiles:
+      - tools
+    working_dir: /work
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    environment:
+      FRONTEND_BASE_URL: http://frontend:8080
+      LMS_API_BASE_URL: http://api:8000
+    volumes:
+      - ./:/work
+    command: sh -c "npm ci && npm run smoke:frontend"
 
 volumes:
   postgres_data:
