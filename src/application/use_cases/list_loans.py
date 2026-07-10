@@ -10,9 +10,12 @@ class ListLoansUseCase:
     def __init__(self, loan_repo: LoanRepository) -> None:
         self._loan_repo = loan_repo
 
-    def execute(self, *, limit: int = 50) -> list[Loan]:
-        loans = self._loan_repo.list_loans(limit)
+    def execute(self, *, limit: int = 50, offset: int = 0, status: str = "all") -> list[Loan]:
+        loans = self._loan_repo.list_loans(limit=limit, offset=offset, status=status)
         return [self._normalize_status(loan) for loan in loans]
+
+    def count(self, *, status: str = "all") -> int:
+        return self._loan_repo.count_loans(status=status)
 
     @staticmethod
     def _normalize_status(loan: Loan) -> Loan:

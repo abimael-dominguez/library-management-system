@@ -10,5 +10,8 @@ class ListMembersUseCase:
     def __init__(self, member_repo: MemberRepository) -> None:
         self._member_repo = member_repo
 
-    def execute(self, *, limit: int = 50) -> list[Member]:
-        return self._member_repo.list_members(limit)
+    def execute(self, *, limit: int = 50, offset: int = 0) -> list[Member]:
+        return self._member_repo.list_members(limit=limit, offset=offset)
+
+    def count(self) -> int:
+        return self._member_repo.count_members()

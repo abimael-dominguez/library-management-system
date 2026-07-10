@@ -17,5 +17,9 @@ class EmployeeRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def list_employees(self, limit: int = 50) -> list[Employee]:
+    def list_employees(self, limit: int = 50, offset: int = 0) -> list[Employee]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def count_employees(self) -> int:
         raise NotImplementedError

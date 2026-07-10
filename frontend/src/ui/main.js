@@ -133,7 +133,7 @@ async function refreshAppData() {
         renderBooksSkeleton();
         const [books, loans, members, employees, importSummary] = await Promise.all([
             libraryService.listBooks(),
-            libraryService.listLoans(),
+            libraryService.listLoans({ status: 'open' }),
             libraryService.listMembers(),
             libraryService.listEmployees(),
             libraryService.getImportSummary()

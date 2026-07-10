@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ...domain.entities.employee import Employee
@@ -41,6 +41,14 @@ class SqlAlchemyEmployeeRepository(EmployeeRepository):
         model = self._db.get(EmployeeModel, employee_id)
         return _to_domain_employee(model) if model else None
 
-    def list_employees(self, limit: int = 50) -> list[Employee]:
-        stmt = select(EmployeeModel).order_by(EmployeeModel.first_name, EmployeeModel.last_name).limit(limit)
+    def list_employees(self, limit: int = 50, offset: int = 0) -> list[Employee]:
+        stmt = (
+            select(EmployeeModel)
+            .order_by(EmployeeModel.first_name, EmployeeModel.last_name)
+            .offset(offset)
+            .limit(limit)
+        )
         return [_to_domain_employee(model) for model in self._db.scalars(stmt).all()]
+
+    def count_employees(self) -> int:
+        return int(self._db.scalar(select(func.count(EmployeeModel.employee_id))) or 0)

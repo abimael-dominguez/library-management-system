@@ -25,5 +25,9 @@ class BookRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def list_books(self, limit: int = 50) -> list[Book]:
+    def list_books(self, limit: int = 50, offset: int = 0) -> list[Book]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def count_books(self) -> int:
         raise NotImplementedError

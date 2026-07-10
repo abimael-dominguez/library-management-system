@@ -22,7 +22,11 @@ class LoanRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def list_loans(self, limit: int = 50) -> list[Loan]:
+    def list_loans(self, limit: int = 50, offset: int = 0, status: str = "all") -> list[Loan]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def count_loans(self, status: str = "all") -> int:
         raise NotImplementedError
 
     @abstractmethod

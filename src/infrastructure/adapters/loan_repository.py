@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from sqlalchemy import select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session
 
 from ...domain.entities.loan import Loan, LoanStatus
@@ -87,17 +87,35 @@ class SqlAlchemyLoanRepository(LoanRepository):
         model.status = loan.status.value
         return loan
 
-    def list_loans(self, limit: int = 50) -> list[Loan]:
+    def _apply_status_filter(self, stmt: Select, status: str) -> Select:
+        today = date.today()
+        if status == "open":
+            return stmt.where(LoanModel.status == LoanStatus.IN_PROGRESS.value)
+        if status == "overdue":
+            return stmt.where(
+                LoanModel.status == LoanStatus.IN_PROGRESS.value,
+                LoanModel.due_date < today,
+            )
+        if status == "returned":
+            return stmt.where(LoanModel.status == LoanStatus.RETURNED.value)
+        return stmt
+
+    def list_loans(self, limit: int = 50, offset: int = 0, status: str = "all") -> list[Loan]:
         stmt = (
             select(LoanModel)
             .join(BookCopyModel, LoanModel.book_copy_id == BookCopyModel.book_copy_id)
             .join(BookModel, BookCopyModel.book_id == BookModel.book_id)
             .join(MemberModel, LoanModel.member_id == MemberModel.member_id)
             .outerjoin(EmployeeModel, LoanModel.employee_id == EmployeeModel.employee_id)
-            .order_by(LoanModel.created_at.desc())
-            .limit(limit)
         )
+        stmt = self._apply_status_filter(stmt, status)
+        stmt = stmt.order_by(LoanModel.created_at.desc(), LoanModel.loan_id).offset(offset).limit(limit)
         return [_to_domain_loan(model) for model in self._db.scalars(stmt).all()]
+
+    def count_loans(self, status: str = "all") -> int:
+        stmt = select(func.count(LoanModel.loan_id))
+        stmt = self._apply_status_filter(stmt, status)
+        return int(self._db.scalar(stmt) or 0)
 
     def get_active_loans_by_book_copy_id(self, book_copy_id: str) -> list[Loan]:
         stmt = select(LoanModel).where(

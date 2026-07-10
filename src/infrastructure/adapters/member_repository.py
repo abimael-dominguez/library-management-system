@@ -64,10 +64,14 @@ class SqlAlchemyMemberRepository(MemberRepository):
         )
         return [_to_domain_member(model) for model in self._db.scalars(stmt).all()]
 
-    def list_members(self, limit: int = 50) -> list[Member]:
+    def list_members(self, limit: int = 50, offset: int = 0) -> list[Member]:
         stmt = (
             select(MemberModel)
             .order_by(MemberModel.first_name, MemberModel.last_name)
+            .offset(offset)
             .limit(limit)
         )
         return [_to_domain_member(model) for model in self._db.scalars(stmt).all()]
+
+    def count_members(self) -> int:
+        return int(self._db.scalar(select(func.count(MemberModel.member_id))) or 0)

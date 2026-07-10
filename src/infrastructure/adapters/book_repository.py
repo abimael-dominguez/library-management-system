@@ -82,9 +82,12 @@ class SqlAlchemyBookRepository(BookRepository):
         )
         return [_to_domain_book(model) for model in self._db.scalars(stmt).all()]
 
-    def list_books(self, limit: int = 50) -> list[Book]:
-        stmt = select(BookModel).order_by(BookModel.title).limit(limit)
+    def list_books(self, limit: int = 50, offset: int = 0) -> list[Book]:
+        stmt = select(BookModel).order_by(BookModel.title).offset(offset).limit(limit)
         return [_to_domain_book(model) for model in self._db.scalars(stmt).all()]
+
+    def count_books(self) -> int:
+        return int(self._db.scalar(select(func.count(BookModel.book_id))) or 0)
 
 
 class SqlAlchemyBookCopyRepository(BookCopyRepository):

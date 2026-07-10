@@ -21,5 +21,9 @@ class MemberRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def list_members(self, limit: int = 50) -> list[Member]:
+    def list_members(self, limit: int = 50, offset: int = 0) -> list[Member]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def count_members(self) -> int:
         raise NotImplementedError

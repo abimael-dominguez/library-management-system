@@ -16,9 +16,12 @@ class ListBooksUseCase:
         self._book_repo = book_repo
         self._book_copy_repo = book_copy_repo
 
-    def execute(self, *, limit: int = 50) -> list[Book]:
-        books = self._book_repo.list_books(limit)
+    def execute(self, *, limit: int = 50, offset: int = 0) -> list[Book]:
+        books = self._book_repo.list_books(limit=limit, offset=offset)
         return [self._enrich(book) for book in books]
+
+    def count(self) -> int:
+        return self._book_repo.count_books()
 
     def _enrich(self, book: Book) -> Book:
         """Attach availability info that requires repository lookups."""

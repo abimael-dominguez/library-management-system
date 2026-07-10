@@ -9,8 +9,10 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from ...application.dtos import (
@@ -28,9 +30,32 @@ from ..persistence.seed import read_seed_summary
 from .serializers import serialize_book, serialize_employee, serialize_loan, serialize_member
 
 
+def _error_payload(code: str, message: str, field_errors: list[dict] | None = None) -> dict:
+    return {
+        "error": {
+            "code": code,
+            "message": message,
+            "field_errors": field_errors or [],
+        }
+    }
+
+
+def _pagination_meta(*, limit: int, offset: int, returned: int, total: int) -> dict[str, int | bool]:
+    return {
+        "limit": limit,
+        "offset": offset,
+        "returned": returned,
+        "total": total,
+        "has_more": offset + returned < total,
+    }
+
+
 def _raise_bad_request(exc: DomainError) -> None:
     """Translate a domain-layer validation error into an HTTP 400 response."""
-    raise HTTPException(status_code=400, detail=str(exc)) from exc
+    raise HTTPException(
+        status_code=400,
+        detail={"code": "domain_error", "message": str(exc), "field_errors": []},
+    ) from exc
 
 
 def create_app(*, auto_seed: bool = False) -> FastAPI:
@@ -53,6 +78,39 @@ def create_app(*, auto_seed: bool = False) -> FastAPI:
         allow_headers=["*"],
     )
 
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(request: Request, exc: HTTPException):
+        detail = exc.detail
+        if isinstance(detail, dict) and "code" in detail and "message" in detail:
+            payload = _error_payload(
+                code=str(detail["code"]),
+                message=str(detail["message"]),
+                field_errors=list(detail.get("field_errors") or []),
+            )
+        else:
+            default_code = "not_found" if exc.status_code == 404 else "http_error"
+            payload = _error_payload(code=default_code, message=str(detail))
+        return JSONResponse(status_code=exc.status_code, content=payload)
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        field_errors = [
+            {
+                "field": ".".join(str(part) for part in error.get("loc", []) if part != "body"),
+                "message": error.get("msg", "Invalid value."),
+                "type": error.get("type", "validation_error"),
+            }
+            for error in exc.errors()
+        ]
+        return JSONResponse(
+            status_code=422,
+            content=_error_payload(
+                code="validation_error",
+                message="Request validation failed.",
+                field_errors=field_errors,
+            ),
+        )
+
     # ------------------------------------------------------------------
     # Health & diagnostics
     # ------------------------------------------------------------------
@@ -70,10 +128,18 @@ def create_app(*, auto_seed: bool = False) -> FastAPI:
     # ------------------------------------------------------------------
 
     @app.get("/books")
-    def list_books(limit: int = Query(default=50, ge=1, le=100), db: Session = Depends(get_db)):
+    def list_books(
+        limit: int = Query(default=50, ge=1, le=100),
+        offset: int = Query(default=0, ge=0),
+        db: Session = Depends(get_db),
+    ):
         container = ServiceContainer(db)
-        books = container.list_books.execute(limit=limit)
-        return {"books": [serialize_book(book) for book in books]}
+        books = container.list_books.execute(limit=limit, offset=offset)
+        total = container.list_books.count()
+        return {
+            "books": [serialize_book(book) for book in books],
+            "meta": _pagination_meta(limit=limit, offset=offset, returned=len(books), total=total),
+        }
 
     @app.post("/books", status_code=201)
     def create_book(payload: BookCreateRequest, db: Session = Depends(get_db)):
@@ -87,7 +153,7 @@ def create_app(*, auto_seed: bool = False) -> FastAPI:
     def get_book(book_id: str, db: Session = Depends(get_db)):
         book = ServiceContainer(db).get_book.execute(book_id=book_id)
         if not book:
-            raise HTTPException(status_code=404, detail="Book not found.")
+            raise HTTPException(status_code=404, detail={"code": "book_not_found", "message": "Book not found."})
         return serialize_book(book)
 
     @app.get("/search")
@@ -123,9 +189,18 @@ def create_app(*, auto_seed: bool = False) -> FastAPI:
     # ------------------------------------------------------------------
 
     @app.get("/members")
-    def list_members(limit: int = Query(default=50, ge=1, le=100), db: Session = Depends(get_db)):
-        members = ServiceContainer(db).list_members.execute(limit=limit)
-        return {"members": [serialize_member(member) for member in members]}
+    def list_members(
+        limit: int = Query(default=50, ge=1, le=100),
+        offset: int = Query(default=0, ge=0),
+        db: Session = Depends(get_db),
+    ):
+        container = ServiceContainer(db)
+        members = container.list_members.execute(limit=limit, offset=offset)
+        total = container.list_members.count()
+        return {
+            "members": [serialize_member(member) for member in members],
+            "meta": _pagination_meta(limit=limit, offset=offset, returned=len(members), total=total),
+        }
 
     @app.post("/members", status_code=201)
     def create_member(payload: MemberCreateRequest, db: Session = Depends(get_db)):
@@ -140,9 +215,18 @@ def create_app(*, auto_seed: bool = False) -> FastAPI:
     # ------------------------------------------------------------------
 
     @app.get("/employees")
-    def list_employees(limit: int = Query(default=50, ge=1, le=100), db: Session = Depends(get_db)):
-        employees = ServiceContainer(db).list_employees.execute(limit=limit)
-        return {"employees": [serialize_employee(employee) for employee in employees]}
+    def list_employees(
+        limit: int = Query(default=50, ge=1, le=100),
+        offset: int = Query(default=0, ge=0),
+        db: Session = Depends(get_db),
+    ):
+        container = ServiceContainer(db)
+        employees = container.list_employees.execute(limit=limit, offset=offset)
+        total = container.list_employees.count()
+        return {
+            "employees": [serialize_employee(employee) for employee in employees],
+            "meta": _pagination_meta(limit=limit, offset=offset, returned=len(employees), total=total),
+        }
 
     @app.post("/employees", status_code=201)
     def create_employee(payload: EmployeeCreateRequest, db: Session = Depends(get_db)):
@@ -157,9 +241,19 @@ def create_app(*, auto_seed: bool = False) -> FastAPI:
     # ------------------------------------------------------------------
 
     @app.get("/loans")
-    def list_loans(limit: int = Query(default=50, ge=1, le=100), db: Session = Depends(get_db)):
-        loans = ServiceContainer(db).list_loans.execute(limit=limit)
-        return {"loans": [serialize_loan(loan) for loan in loans]}
+    def list_loans(
+        limit: int = Query(default=50, ge=1, le=100),
+        offset: int = Query(default=0, ge=0),
+        status: str = Query(default="all", pattern="^(all|open|overdue|returned)$"),
+        db: Session = Depends(get_db),
+    ):
+        container = ServiceContainer(db)
+        loans = container.list_loans.execute(limit=limit, offset=offset, status=status)
+        total = container.list_loans.count(status=status)
+        return {
+            "loans": [serialize_loan(loan) for loan in loans],
+            "meta": _pagination_meta(limit=limit, offset=offset, returned=len(loans), total=total),
+        }
 
     @app.post("/loans", status_code=201)
     def create_loan(payload: LoanCreateRequest, db: Session = Depends(get_db)):
@@ -173,7 +267,7 @@ def create_app(*, auto_seed: bool = False) -> FastAPI:
     def get_loan(loan_id: str, db: Session = Depends(get_db)):
         loan = ServiceContainer(db).get_loan.execute(loan_id=loan_id)
         if not loan:
-            raise HTTPException(status_code=404, detail="Loan not found.")
+            raise HTTPException(status_code=404, detail={"code": "loan_not_found", "message": "Loan not found."})
         return serialize_loan(loan)
 
     @app.put("/loans/{loan_id}/return")
