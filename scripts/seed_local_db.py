@@ -67,7 +67,7 @@ def main() -> None:
     print(
         "Books: {books}, Copies: {copies}, Members: {members}, Employees: {employees}, "
         "Active loans: {active_loans}, Skipped active loans: {skipped_active_loans}, "
-        "Skipped returned history: {skipped_loan_history}, Warnings: {warnings}".format(
+        "Skipped returned history: {skipped_loan_history}, Warnings: {warnings}, Errors: {errors}".format(
             books=summary.books,
             copies=summary.copies,
             members=summary.members,
@@ -76,6 +76,7 @@ def main() -> None:
             skipped_active_loans=summary.skipped_active_loans,
             skipped_loan_history=summary.skipped_loan_history,
             warnings=summary.warnings,
+            errors=summary.errors,
         )
     )
 

@@ -317,6 +317,7 @@ export function renderImportSummary(importSummary) {
 
     const text = document.getElementById('importSummaryText');
     const warnings = document.getElementById('importWarnings');
+    const errors = document.getElementById('importErrors');
     const copies = document.getElementById('importCopies');
     const card = document.getElementById('importSummaryCard');
     const source = document.getElementById('importSource');
@@ -329,36 +330,46 @@ export function renderImportSummary(importSummary) {
     ].filter(Boolean);
     const syncDots = document.querySelectorAll('.sync-dot');
 
-    if (!text || !warnings || !copies || !card || !source || !status) {
+    if (!text || !warnings || !errors || !copies || !card || !source || !status) {
         return;
     }
 
     const sourcePath = importSummary.csv_path || '';
     const shortSource = sourcePath.split('/').filter(Boolean).pop() || 'No file';
     const warningCount = importSummary.warnings || 0;
+    const errorCount = importSummary.errors || 0;
     const hasWarnings = warningCount > 0;
+    const hasErrors = errorCount > 0;
 
-    text.textContent = hasWarnings
+    text.textContent = hasErrors
+        ? t('import.errorText', { count: errorCount })
+        : hasWarnings
         ? t('import.warningText', { count: warningCount })
         : t('import.cleanText');
     warnings.textContent = warningCount;
+    errors.textContent = errorCount;
     copies.textContent = importSummary.copies || 0;
     source.textContent = shortSource;
-    status.textContent = hasWarnings ? t('import.needsReview') : t('import.healthy');
+    status.textContent = hasErrors ? t('import.blocked') : hasWarnings ? t('import.needsReview') : t('import.healthy');
     card.classList.toggle('has-warning', hasWarnings);
+    card.classList.toggle('has-error', hasErrors);
 
     if (dataAlert && dataAlertText) {
-        dataAlert.classList.toggle('is-hidden', !hasWarnings);
-        dataAlertText.textContent = t('workspace.syncWarning', { count: warningCount });
+        dataAlert.classList.toggle('is-hidden', !hasWarnings && !hasErrors);
+        dataAlertText.textContent = hasErrors
+            ? t('workspace.syncError', { count: errorCount })
+            : t('workspace.syncWarning', { count: warningCount });
     }
 
     syncTexts.forEach(element => {
-        element.textContent = hasWarnings
+        element.textContent = hasErrors
+            ? t('workspace.syncError', { count: errorCount })
+            : hasWarnings
             ? t('workspace.syncWarning', { count: warningCount })
             : t('workspace.syncHealthy');
     });
     syncDots.forEach(element => {
-        element.classList.toggle('has-warning', hasWarnings);
+        element.classList.toggle('has-warning', hasWarnings || hasErrors);
     });
 }
 

@@ -47,6 +47,7 @@ def test_import_summary_endpoint(db_session):
     assert response.status_code == 200
     payload = response.json()
     assert "warnings" in payload
+    assert "errors" in payload
     assert "copies" in payload
 
 

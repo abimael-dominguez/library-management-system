@@ -28,6 +28,14 @@ def test_seed_from_csv_imports_books_and_active_loans(db_session, tmp_path):
     assert summary.skipped_active_loans == 1
     assert summary.skipped_loan_history == 1
     assert summary.warnings > 0
+    assert summary.errors == 0
+    issues = summary.to_dict()["issues"]
+    assert all(issue["severity"] == "warning" for issue in issues)
+    assert {issue["code"] for issue in issues} >= {
+        "missing_author",
+        "active_loan_missing_loan_date",
+        "returned_history_missing_actual_return_date",
+    }
     assert len(db_session.scalars(select(BookModel)).all()) == 3
     assert len(db_session.scalars(select(LoanModel)).all()) == 1
     assert len(db_session.scalars(select(MemberModel)).all()) == 1

@@ -16,6 +16,7 @@ from .models import BookCopyModel, BookModel, EmployeeModel, LoanModel, MemberMo
 
 
 SUMMARY_OUTPUT_PATH = Path("data/local/last_seed_summary.json")
+IssueValue = str | int | None
 
 
 @dataclass
@@ -28,10 +29,11 @@ class SeedSummary:
     skipped_active_loans: int = 0
     skipped_loan_history: int = 0
     warnings: int = 0
+    errors: int = 0
     csv_path: str | None = None
-    issues: list[dict[str, str | int | None]] | None = None
+    issues: list[dict[str, IssueValue]] | None = None
 
-    def to_dict(self) -> dict[str, int | str | None | list[dict[str, str | int | None]]]:
+    def to_dict(self) -> dict[str, int | str | None | list[dict[str, IssueValue]]]:
         return {
             "books": self.books,
             "copies": self.copies,
@@ -41,22 +43,73 @@ class SeedSummary:
             "skipped_active_loans": self.skipped_active_loans,
             "skipped_loan_history": self.skipped_loan_history,
             "warnings": self.warnings,
+            "errors": self.errors,
             "csv_path": self.csv_path,
             "issues": self.issues or [],
         }
+
+    def add_issue(
+        self,
+        *,
+        severity: str,
+        code: str,
+        message: str,
+        row: int | None = None,
+        field: str | None = None,
+        value: str | None = None,
+    ) -> None:
+        if severity == "error":
+            self.errors += 1
+        else:
+            self.warnings += 1
+        if self.issues is None:
+            self.issues = []
+        self.issues.append(
+            {
+                "severity": severity,
+                "code": code,
+                "row": row,
+                "field": field,
+                "value": value,
+                "message": message,
+            }
+        )
 
     def warn(
         self,
         message: str,
         *,
+        code: str,
         row: int | None = None,
         field: str | None = None,
         value: str | None = None,
     ) -> None:
-        self.warnings += 1
-        if self.issues is None:
-            self.issues = []
-        self.issues.append({"row": row, "field": field, "value": value, "message": message})
+        self.add_issue(
+            severity="warning",
+            code=code,
+            message=message,
+            row=row,
+            field=field,
+            value=value,
+        )
+
+    def error(
+        self,
+        message: str,
+        *,
+        code: str,
+        row: int | None = None,
+        field: str | None = None,
+        value: str | None = None,
+    ) -> None:
+        self.add_issue(
+            severity="error",
+            code=code,
+            message=message,
+            row=row,
+            field=field,
+            value=value,
+        )
 
 
 def normalize_text(value: str | None) -> str:
@@ -223,9 +276,19 @@ def create_book_with_copies(
     author = normalize_text(row.get("author"))
     if not author:
         author = "Unknown Author"
-        summary.warn("Missing author; imported with Unknown Author.", row=row_number, field="author")
+        summary.warn(
+            "Missing author; imported with Unknown Author.",
+            code="missing_author",
+            row=row_number,
+            field="author",
+        )
     if not normalize_text(row.get("total_copies")):
-        summary.warn("Missing total_copies; defaulted to 1.", row=row_number, field="total_copies")
+        summary.warn(
+            "Missing total_copies; defaulted to 1.",
+            code="missing_total_copies",
+            row=row_number,
+            field="total_copies",
+        )
     total_copies = max(parse_int(row.get("total_copies"), 1) or 1, 1)
     pages = parse_int(row.get("pages"))
     max_loan_weeks = max(parse_int(row.get("max_loan_weeks"), 3) or 3, 1)
@@ -293,7 +356,12 @@ def seed_from_csv(
         title = normalize_text(row.get("title"))
         author = normalize_text(row.get("author"))
         if not title:
-            summary.warn("Missing title; row skipped.", row=row_number, field="title")
+            summary.warn(
+                "Missing title; row skipped.",
+                code="missing_title",
+                row=row_number,
+                field="title",
+            )
             continue
 
         book_key = normalize_key(f"{title}|{author}")
@@ -313,6 +381,7 @@ def seed_from_csv(
                 summary.skipped_loan_history += 1
                 summary.warn(
                     "Returned loan history has no actual return date; loan history was not imported.",
+                    code="returned_history_missing_actual_return_date",
                     row=row_number,
                     field="actual_return_date",
                 )
@@ -320,7 +389,12 @@ def seed_from_csv(
 
         copy = choose_available_copy(copies, active_copy_ids)
         if not copy:
-            summary.warn("No available copy left for active loan; loan skipped.", row=row_number, field="total_copies")
+            summary.warn(
+                "No available copy left for active loan; loan skipped.",
+                code="no_available_copy_for_active_loan",
+                row=row_number,
+                field="total_copies",
+            )
             continue
 
         loan_date = parse_date(row.get("loan_date"))
@@ -329,6 +403,7 @@ def seed_from_csv(
             summary.skipped_active_loans += 1
             summary.warn(
                 "Active loan skipped because loan_date is missing or invalid.",
+                code="active_loan_missing_loan_date",
                 row=row_number,
                 field="loan_date",
                 value=normalize_text(row.get("loan_date")) or None,
@@ -338,6 +413,7 @@ def seed_from_csv(
             summary.skipped_active_loans += 1
             summary.warn(
                 "Active loan skipped because member is missing or invalid.",
+                code="active_loan_missing_member",
                 row=row_number,
                 field="member",
                 value=member_name or None,
@@ -347,13 +423,20 @@ def seed_from_csv(
             due_date = loan_date + timedelta(weeks=book.max_loan_weeks)
             summary.warn(
                 "Missing or invalid due date; derived from loan_date and max_loan_weeks.",
+                code="missing_due_date_derived",
                 row=row_number,
                 field="due_date",
                 value=normalize_text(row.get("due_date")) or None,
             )
         if loan_date and due_date and due_date < loan_date:
             summary.skipped_active_loans += 1
-            summary.warn("Active loan skipped because due date is before loan date.", row=row_number, field="due_date")
+            summary.warn(
+                "Active loan skipped because due date is before loan date.",
+                code="active_loan_due_before_loan",
+                row=row_number,
+                field="due_date",
+                value=due_date.isoformat(),
+            )
             continue
 
         member = ensure_member(db, member_cache, member_name, summary)
@@ -437,9 +520,39 @@ def write_seed_summary(summary: SeedSummary) -> None:
     )
 
 
-def read_seed_summary() -> dict[str, int | str | None | list[dict[str, str | int | None]]]:
+def normalize_seed_summary_payload(payload: dict) -> dict[str, int | str | None | list[dict[str, IssueValue]]]:
+    normalized = {
+        "books": int(payload.get("books") or 0),
+        "copies": int(payload.get("copies") or 0),
+        "members": int(payload.get("members") or 0),
+        "employees": int(payload.get("employees") or 0),
+        "active_loans": int(payload.get("active_loans") or 0),
+        "skipped_active_loans": int(payload.get("skipped_active_loans") or 0),
+        "skipped_loan_history": int(payload.get("skipped_loan_history") or 0),
+        "warnings": int(payload.get("warnings") or 0),
+        "errors": int(payload.get("errors") or 0),
+        "csv_path": payload.get("csv_path"),
+        "issues": [],
+    }
+    for issue in payload.get("issues") or []:
+        if not isinstance(issue, dict):
+            continue
+        normalized["issues"].append(
+            {
+                "severity": issue.get("severity") or "warning",
+                "code": issue.get("code") or "legacy_import_warning",
+                "row": issue.get("row"),
+                "field": issue.get("field"),
+                "value": issue.get("value"),
+                "message": issue.get("message"),
+            }
+        )
+    return normalized
+
+
+def read_seed_summary() -> dict[str, int | str | None | list[dict[str, IssueValue]]]:
     if not SUMMARY_OUTPUT_PATH.exists():
-        return {
+        return normalize_seed_summary_payload({
             "books": 0,
             "copies": 0,
             "members": 0,
@@ -448,7 +561,8 @@ def read_seed_summary() -> dict[str, int | str | None | list[dict[str, str | int
             "skipped_active_loans": 0,
             "skipped_loan_history": 0,
             "warnings": 0,
+            "errors": 0,
             "csv_path": None,
             "issues": [],
-        }
-    return json.loads(SUMMARY_OUTPUT_PATH.read_text(encoding="utf-8"))
+        })
+    return normalize_seed_summary_payload(json.loads(SUMMARY_OUTPUT_PATH.read_text(encoding="utf-8")))

@@ -859,7 +859,7 @@ button:disabled {
 
 .summary-metrics {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
     gap: 0.5rem;
 }
 
@@ -882,6 +882,10 @@ button:disabled {
 
 .import-card.has-warning {
     border-color: color-mix(in srgb, var(--warning) 40%, var(--border));
+}
+
+.import-card.has-error {
+    border-color: color-mix(in srgb, var(--danger) 48%, var(--border));
 }
 
 .compact-header {
