@@ -269,6 +269,7 @@ def seed_from_csv(
     csv_path: Path,
     reset: bool = True,
     rebuild_schema: bool = False,
+    write_summary_file: bool = True,
 ) -> SeedSummary:
     if reset:
         reset_library_data(db, rebuild_schema=rebuild_schema)
@@ -377,11 +378,17 @@ def seed_from_csv(
         summary.active_loans += 1
 
     db.commit()
-    write_seed_summary(summary)
+    if write_summary_file:
+        write_seed_summary(summary)
     return summary
 
 
-def seed_demo_data(db: Session, *, rebuild_schema: bool = False) -> SeedSummary:
+def seed_demo_data(
+    db: Session,
+    *,
+    rebuild_schema: bool = False,
+    write_summary_file: bool = True,
+) -> SeedSummary:
     reset_library_data(db, rebuild_schema=rebuild_schema)
     summary = SeedSummary()
     summary.csv_path = "demo"
@@ -417,7 +424,8 @@ def seed_demo_data(db: Session, *, rebuild_schema: bool = False) -> SeedSummary:
     summary.copies = 2
     summary.active_loans = 1
     db.commit()
-    write_seed_summary(summary)
+    if write_summary_file:
+        write_seed_summary(summary)
     return summary
 
 

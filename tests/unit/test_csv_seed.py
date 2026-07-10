@@ -20,7 +20,7 @@ def test_seed_from_csv_imports_books_and_active_loans(db_session, tmp_path):
         encoding="utf-8",
     )
 
-    summary = seed_from_csv(db_session, csv_path)
+    summary = seed_from_csv(db_session, csv_path, write_summary_file=False)
 
     assert summary.books == 3
     assert summary.copies == 4
