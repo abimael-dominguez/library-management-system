@@ -1,3 +1,4 @@
+import { t } from '../domain/i18n.js';
 import { escapeHtml, getStatusLabel, renderAvailability } from '../domain/library.js';
 
 function renderEmptyState(icon, title, copy) {
@@ -12,34 +13,56 @@ function renderEmptyState(icon, title, copy) {
     `;
 }
 
+function encodeDisplayText(value) {
+    return encodeURIComponent(value || '');
+}
+
 export function renderBooks(books) {
     const container = document.getElementById('booksContainer');
     if (!container) {
         return;
     }
 
+    container.className = 'catalog-list';
+
     if (books.length === 0) {
-        container.innerHTML = renderEmptyState('book', 'No books found', 'Try a broader search or add a new title to keep the catalog moving.');
+        container.innerHTML = renderEmptyState('book', t('empty.booksTitle'), t('empty.booksCopy'));
         return;
     }
 
-    container.innerHTML = books.map(book => `
-        <div class="book-card">
-            <div class="book-header">
-                <h3 class="book-title">${escapeHtml(book.title)}</h3>
-                <p class="book-author">by ${escapeHtml(book.author)}</p>
-            </div>
-            ${book.isbn ? `<p class="book-isbn"><strong>ISBN:</strong> ${escapeHtml(book.isbn)}</p>` : ''}
-            ${book.publisher ? `<p><strong>Publisher:</strong> ${escapeHtml(book.publisher)}</p>` : ''}
-            ${book.publication_year ? `<p><strong>Year:</strong> ${book.publication_year}</p>` : ''}
-            ${book.pages ? `<p><strong>Pages:</strong> ${book.pages}</p>` : ''}
-            ${renderAvailability(book)}
-            <div class="book-meta">
-                <span class="badge badge-primary">${book.total_copies} copies</span>
-                <span class="badge badge-secondary">${book.max_loan_weeks}w loan</span>
-            </div>
-        </div>
-    `).join('');
+    container.innerHTML = books.map(book => {
+        const availableCopyId = book.first_available_copy_id || '';
+        const canLoan = Boolean(availableCopyId);
+        const title = book.title || t('app.empty');
+        const author = book.author || t('app.empty');
+        return `
+            <article class="book-row">
+                <div class="row-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="row-main">
+                    <div class="row-title-line">
+                        <h3>${escapeHtml(title)}</h3>
+                        <span class="availability-badge ${canLoan ? 'available' : 'unavailable'}">${book.available_copies || 0}/${book.total_copies || 0}</span>
+                    </div>
+                    <p>${escapeHtml(t('book.byAuthor', { author }))}</p>
+                    <div class="row-meta">
+                        ${book.isbn ? `<span>${escapeHtml(t('book.isbn'))}: ${escapeHtml(book.isbn)}</span>` : ''}
+                        ${book.pages ? `<span>${escapeHtml(t('book.pages'))}: ${book.pages}</span>` : ''}
+                        <span>${escapeHtml(t('book.copies', { count: book.total_copies || 0 }))}</span>
+                        <span>${escapeHtml(t('book.loanWeeks', { count: book.max_loan_weeks || 3 }))}</span>
+                    </div>
+                    ${renderAvailability(book)}
+                </div>
+                <div class="row-actions">
+                    <button class="btn btn-primary compact" ${canLoan ? '' : 'disabled'} onclick="window.LibraryUI.startLoanFlow('${availableCopyId}', '${encodeDisplayText(title)}')">
+                        <i class="fas fa-book-reader"></i>
+                        <span>${escapeHtml(t('actions.createLoan'))}</span>
+                    </button>
+                </div>
+            </article>
+        `;
+    }).join('');
 }
 
 export function renderLoansCollection(loans, mode = 'active') {
@@ -48,68 +71,43 @@ export function renderLoansCollection(loans, mode = 'active') {
         return;
     }
 
+    container.className = 'loan-list';
+
     if (loans.length === 0) {
         container.innerHTML = mode === 'overdue'
-            ? renderEmptyState('shield-heart', 'No overdue loans', 'Everything is on track right now. No active loans need follow-up.')
-            : renderEmptyState('receipt', 'No open loans', 'There are no books currently out. New loans will appear here.');
+            ? renderEmptyState('shield-heart', t('empty.overdueTitle'), t('empty.overdueCopy'))
+            : renderEmptyState('receipt', t('empty.openLoansTitle'), t('empty.openLoansCopy'));
         return;
     }
 
     container.innerHTML = loans.map(loan => {
-        const displayText = encodeURIComponent(`${loan.book_title || loan.loan_id} · ${loan.member_name || 'No member'}`);
+        const title = loan.book_title || t('app.empty');
+        const displayText = encodeDisplayText(`${title} · ${loan.member_name || t('loan.noMember')}`);
         const isOverdue = loan.status === 'overdue';
         return `
-            <div class="loan-card ${loan.status === 'overdue' ? 'loan-card-overdue' : ''}">
-                <div class="loan-card-header">
-                    <div>
-                        <h3 class="book-title">${escapeHtml(loan.book_title || 'Loan')}</h3>
-                        <p class="book-author">${escapeHtml(loan.book_author || 'No author')}</p>
-                    </div>
-                    <span class="badge ${loan.status === 'overdue' ? 'badge-warning' : 'badge-primary'}">${getStatusLabel(loan.status)}</span>
+            <article class="loan-row ${isOverdue ? 'is-overdue' : ''}">
+                <div class="row-icon">
+                    <i class="fas fa-${isOverdue ? 'hourglass-half' : 'book-reader'}"></i>
                 </div>
-                <div class="loan-hero-strip ${isOverdue ? 'loan-hero-strip-overdue' : ''}">
-                    <div class="loan-hero-block">
-                        <span class="loan-hero-label">Borrower</span>
-                        <strong>${escapeHtml(loan.member_name || 'No member')}</strong>
+                <div class="row-main">
+                    <div class="row-title-line">
+                        <h3>${escapeHtml(title)}</h3>
+                        <span class="badge ${isOverdue ? 'badge-warning' : 'badge-primary'}">${escapeHtml(getStatusLabel(loan.status))}</span>
                     </div>
-                    <div class="loan-hero-block">
-                        <span class="loan-hero-label">Processed by</span>
-                        <strong>${escapeHtml(loan.employee_name || 'No employee')}</strong>
+                    <p>${escapeHtml(loan.book_author || t('app.empty'))}</p>
+                    <div class="loan-facts">
+                        <span><strong>${escapeHtml(t('loan.borrower'))}</strong> ${escapeHtml(loan.member_name || t('loan.noMember'))}</span>
+                        <span><strong>${escapeHtml(t('loan.dueDate'))}</strong> ${escapeHtml(loan.due_date || 'N/A')}</span>
+                        <span><strong>${escapeHtml(t('loan.processedBy'))}</strong> ${escapeHtml(loan.employee_name || t('loan.noEmployee'))}</span>
                     </div>
                 </div>
-                <div class="loan-timeline">
-                    <div class="loan-timeline-item">
-                        <span>Loan date</span>
-                        <strong>${escapeHtml(loan.loan_date || 'N/A')}</strong>
-                    </div>
-                    <div class="loan-timeline-divider"></div>
-                    <div class="loan-timeline-item">
-                        <span>Due date</span>
-                        <strong>${escapeHtml(loan.due_date || 'N/A')}</strong>
-                    </div>
+                <div class="row-actions">
+                    <button class="btn ${isOverdue ? 'btn-warning' : 'btn-success'} compact" onclick="window.LibraryUI.startReturnFlow('${loan.loan_id}', '${displayText}')">
+                        <i class="fas fa-arrow-rotate-left"></i>
+                        <span>${escapeHtml(t('actions.registerReturn'))}</span>
+                    </button>
                 </div>
-                <div class="loan-meta-grid">
-                    <div class="loan-meta-item">
-                        <span class="loan-meta-label">Copy status</span>
-                        <strong>${isOverdue ? 'Attention needed' : 'Circulating'}</strong>
-                    </div>
-                    <div class="loan-meta-item">
-                        <span class="loan-meta-label">Loan ID</span>
-                        <strong>${escapeHtml(loan.loan_id || 'N/A')}</strong>
-                    </div>
-                </div>
-                <div class="loan-card-footer">
-                    <div class="book-meta">
-                        <span class="badge badge-secondary">${escapeHtml(loan.book_author || 'Unknown author')}</span>
-                        <span class="badge ${isOverdue ? 'badge-warning-soft' : 'badge-primary-soft'}">${isOverdue ? 'Priority follow-up' : 'On schedule'}</span>
-                    </div>
-                    <div class="loan-card-actions">
-                        <button class="btn btn-outline" onclick="window.LibraryUI.startReturnFlow('${loan.loan_id}', '${displayText}')">
-                            <i class="fas fa-arrow-rotate-left"></i> Register return
-                        </button>
-                    </div>
-                </div>
-            </div>
+            </article>
         `;
     }).join('');
 }
@@ -121,13 +119,13 @@ export function renderBookSearchResults(books) {
     }
 
     if (books.length === 0) {
-        resultsContainer.innerHTML = '<div class="search-result-item">No books found</div>';
+        resultsContainer.innerHTML = `<div class="search-result-item">${escapeHtml(t('empty.searchBooks'))}</div>`;
     } else {
         resultsContainer.innerHTML = books.map(book => `
-            <div class="search-result-item" onclick="window.LibraryUI.selectBook('${book.book_id}')">
-                <div style="font-weight: 500;">${escapeHtml(book.title)}</div>
-                <div style="color: var(--text-muted); font-size: 0.875rem;">by ${escapeHtml(book.author)}</div>
-            </div>
+            <button class="search-result-item" onclick="window.LibraryUI.selectBook('${book.book_id}')">
+                <strong>${escapeHtml(book.title)}</strong>
+                <span>${escapeHtml(t('book.byAuthor', { author: book.author }))} · ${escapeHtml(t('book.availableCount', { available: book.available_copies || 0 }))}</span>
+            </button>
         `).join('');
     }
 
@@ -148,15 +146,15 @@ export function renderLoanSearchResults(loans) {
     }
 
     if (loans.length === 0) {
-        resultsContainer.innerHTML = '<div class="search-result-item">No active loans found</div>';
+        resultsContainer.innerHTML = `<div class="search-result-item">${escapeHtml(t('empty.searchLoans'))}</div>`;
     } else {
         resultsContainer.innerHTML = loans.map(loan => {
-            const label = encodeURIComponent(`${loan.book_title || loan.loan_id} · ${loan.member_name || 'No member'}`);
+            const label = encodeDisplayText(`${loan.book_title || loan.loan_id} · ${loan.member_name || t('loan.noMember')}`);
             return `
-                <div class="search-result-item" onclick="window.LibraryUI.selectLoanForReturn('${loan.loan_id}', '${label}')">
-                    <div style="font-weight: 500;">${escapeHtml(loan.book_title || 'Loan')}</div>
-                    <div style="color: var(--text-muted); font-size: 0.875rem;">${escapeHtml(loan.member_name || 'No member')} · ${getStatusLabel(loan.status)} · Due: ${loan.due_date}</div>
-                </div>
+                <button class="search-result-item" onclick="window.LibraryUI.selectLoanForReturn('${loan.loan_id}', '${label}')">
+                    <strong>${escapeHtml(loan.book_title || t('app.empty'))}</strong>
+                    <span>${escapeHtml(loan.member_name || t('loan.noMember'))} · ${escapeHtml(getStatusLabel(loan.status))} · ${escapeHtml(t('loan.dueDate'))}: ${escapeHtml(loan.due_date || 'N/A')}</span>
+                </button>
             `;
         }).join('');
     }
@@ -171,13 +169,13 @@ export function renderLoanBookResults(books) {
     }
 
     if (books.length === 0) {
-        resultsContainer.innerHTML = '<div class="search-result-item">No books found</div>';
+        resultsContainer.innerHTML = `<div class="search-result-item">${escapeHtml(t('empty.searchBooks'))}</div>`;
     } else {
         resultsContainer.innerHTML = books.map(book => `
-            <div class="search-result-item" onclick="window.LibraryUI.selectBookForLoan('${book.first_available_copy_id || ''}', '${encodeURIComponent(book.title || '')}')">
-                <div style="font-weight: 500;">${escapeHtml(book.title)}</div>
-                <div style="color: var(--text-muted); font-size: 0.875rem;">by ${escapeHtml(book.author)} · ${book.available_copies || 0} available</div>
-            </div>
+            <button class="search-result-item" onclick="window.LibraryUI.selectBookForLoan('${book.first_available_copy_id || ''}', '${encodeDisplayText(book.title || '')}')">
+                <strong>${escapeHtml(book.title)}</strong>
+                <span>${escapeHtml(t('book.byAuthor', { author: book.author }))} · ${escapeHtml(t('book.availableCount', { available: book.available_copies || 0 }))}</span>
+            </button>
         `).join('');
     }
 
@@ -191,12 +189,12 @@ export function renderMemberSearchResults(members) {
     }
 
     if (members.length === 0) {
-        resultsContainer.innerHTML = '<div class="search-result-item">No members found</div>';
+        resultsContainer.innerHTML = `<div class="search-result-item">${escapeHtml(t('empty.searchMembers'))}</div>`;
     } else {
         resultsContainer.innerHTML = members.map(member => `
-            <div class="search-result-item" onclick="window.LibraryUI.selectMemberForLoan('${member.id}', '${encodeURIComponent(member.name || '')}')">
-                <div style="font-weight: 500;">${escapeHtml(member.name)}</div>
-            </div>
+            <button class="search-result-item" onclick="window.LibraryUI.selectMemberForLoan('${member.id}', '${encodeDisplayText(member.name || '')}')">
+                <strong>${escapeHtml(member.name)}</strong>
+            </button>
         `).join('');
     }
 
@@ -210,14 +208,17 @@ export function renderEmployeeSearchResults(employees) {
     }
 
     if (employees.length === 0) {
-        resultsContainer.innerHTML = '<div class="search-result-item">No employees found</div>';
+        resultsContainer.innerHTML = `<div class="search-result-item">${escapeHtml(t('empty.searchEmployees'))}</div>`;
     } else {
-        resultsContainer.innerHTML = employees.map(employee => `
-            <div class="search-result-item" onclick="window.LibraryUI.selectEmployeeForLoan('${employee.employee_id}', '${encodeURIComponent(`${employee.first_name} ${employee.last_name}`)}')">
-                <div style="font-weight: 500;">${escapeHtml(employee.first_name)} ${escapeHtml(employee.last_name)}</div>
-                <div style="color: var(--text-muted); font-size: 0.875rem;">${escapeHtml(employee.position || 'Staff')}</div>
-            </div>
-        `).join('');
+        resultsContainer.innerHTML = employees.map(employee => {
+            const name = `${employee.first_name} ${employee.last_name}`;
+            return `
+                <button class="search-result-item" onclick="window.LibraryUI.selectEmployeeForLoan('${employee.employee_id}', '${encodeDisplayText(name)}')">
+                    <strong>${escapeHtml(name)}</strong>
+                    <span>${escapeHtml(employee.position || t('app.empty'))}</span>
+                </button>
+            `;
+        }).join('');
     }
 
     resultsContainer.style.display = 'block';
@@ -245,22 +246,22 @@ export function renderCollectionHeader(mode = 'books') {
     }
 
     if (mode === 'active_loans') {
-        eyebrow.textContent = 'Circulation';
-        title.textContent = 'Loaned books';
-        description.textContent = 'Operational list of open loans, including overdue items, with quick access to returns.';
+        eyebrow.textContent = t('sections.loansEyebrow');
+        title.textContent = t('sections.loansTitle');
+        description.textContent = t('sections.loansDescription');
         return;
     }
 
     if (mode === 'overdue_loans') {
-        eyebrow.textContent = 'Follow-up';
-        title.textContent = 'Overdue books';
-        description.textContent = 'Loans that need immediate attention because they are overdue.';
+        eyebrow.textContent = t('sections.overdueEyebrow');
+        title.textContent = t('sections.overdueTitle');
+        description.textContent = t('sections.overdueDescription');
         return;
     }
 
-    eyebrow.textContent = 'Collection';
-    title.textContent = 'Available books';
-    description.textContent = 'Browse the catalog and review availability by title.';
+    eyebrow.textContent = t('sections.catalogEyebrow');
+    title.textContent = t('sections.catalogTitle');
+    description.textContent = t('sections.catalogDescription');
 }
 
 export function renderMembersList(members) {
@@ -270,18 +271,19 @@ export function renderMembersList(members) {
     }
 
     if (members.length === 0) {
-        container.innerHTML = '<div class="mini-empty">No members yet. Register your first borrower to start tracking circulation.</div>';
+        container.innerHTML = `<div class="mini-empty">${escapeHtml(t('empty.members'))}</div>`;
         return;
     }
 
-    container.innerHTML = members.slice(0, 6).map(member => `
-        <div class="mini-list-item">
+    container.innerHTML = members.map(member => `
+        <article class="directory-row">
+            <div class="avatar">${escapeHtml((member.first_name || '?').slice(0, 1))}</div>
             <div>
                 <strong>${escapeHtml(member.first_name)} ${escapeHtml(member.last_name)}</strong>
-                <p>${escapeHtml(member.email || 'No email')}</p>
+                <p>${escapeHtml(member.email || member.phone || t('app.empty'))}</p>
             </div>
-            <span class="badge badge-secondary">${escapeHtml(member.status)}</span>
-        </div>
+            <span class="badge badge-secondary">${escapeHtml(getStatusLabel(member.status))}</span>
+        </article>
     `).join('');
 }
 
@@ -292,18 +294,19 @@ export function renderEmployeesList(employees) {
     }
 
     if (employees.length === 0) {
-        container.innerHTML = '<div class="mini-empty">No employees yet. Add staff members so loan processing stays traceable.</div>';
+        container.innerHTML = `<div class="mini-empty">${escapeHtml(t('empty.employees'))}</div>`;
         return;
     }
 
-    container.innerHTML = employees.slice(0, 6).map(employee => `
-        <div class="mini-list-item">
+    container.innerHTML = employees.map(employee => `
+        <article class="directory-row">
+            <div class="avatar">${escapeHtml((employee.first_name || '?').slice(0, 1))}</div>
             <div>
                 <strong>${escapeHtml(employee.first_name)} ${escapeHtml(employee.last_name)}</strong>
-                <p>${escapeHtml(employee.position || 'Staff')}</p>
+                <p>${escapeHtml(employee.position || t('app.empty'))}</p>
             </div>
-            <span class="badge badge-primary">On file</span>
-        </div>
+            <span class="badge badge-primary">${escapeHtml(t('status.active'))}</span>
+        </article>
     `).join('');
 }
 
@@ -318,6 +321,13 @@ export function renderImportSummary(importSummary) {
     const card = document.getElementById('importSummaryCard');
     const source = document.getElementById('importSource');
     const status = document.getElementById('importStatusLabel');
+    const dataAlert = document.getElementById('dataAlert');
+    const dataAlertText = document.getElementById('dataAlertText');
+    const syncTexts = [
+        document.getElementById('syncStatusText'),
+        document.getElementById('mobileSyncStatusText')
+    ].filter(Boolean);
+    const syncDots = document.querySelectorAll('.sync-dot');
 
     if (!text || !warnings || !copies || !card || !source || !status) {
         return;
@@ -326,14 +336,30 @@ export function renderImportSummary(importSummary) {
     const sourcePath = importSummary.csv_path || '';
     const shortSource = sourcePath.split('/').filter(Boolean).pop() || 'No file';
     const warningCount = importSummary.warnings || 0;
-    text.textContent = warningCount > 0
-        ? `The last sync completed with ${warningCount} warning${warningCount === 1 ? '' : 's'}. Review rows with missing member or date fields before the next import.`
-        : 'The last sync completed cleanly. Your spreadsheet import is ready to use.';
-    warnings.textContent = importSummary.warnings || 0;
+    const hasWarnings = warningCount > 0;
+
+    text.textContent = hasWarnings
+        ? t('import.warningText', { count: warningCount })
+        : t('import.cleanText');
+    warnings.textContent = warningCount;
     copies.textContent = importSummary.copies || 0;
     source.textContent = shortSource;
-    status.textContent = warningCount > 0 ? 'Needs review' : 'Healthy';
-    card.classList.toggle('has-warning', warningCount > 0);
+    status.textContent = hasWarnings ? t('import.needsReview') : t('import.healthy');
+    card.classList.toggle('has-warning', hasWarnings);
+
+    if (dataAlert && dataAlertText) {
+        dataAlert.classList.toggle('is-hidden', !hasWarnings);
+        dataAlertText.textContent = t('workspace.syncWarning', { count: warningCount });
+    }
+
+    syncTexts.forEach(element => {
+        element.textContent = hasWarnings
+            ? t('workspace.syncWarning', { count: warningCount })
+            : t('workspace.syncHealthy');
+    });
+    syncDots.forEach(element => {
+        element.classList.toggle('has-warning', hasWarnings);
+    });
 }
 
 export function renderBooksSkeleton(count = 6) {
@@ -342,25 +368,25 @@ export function renderBooksSkeleton(count = 6) {
         return;
     }
 
+    container.className = 'catalog-list';
     const skeletons = Array.from({ length: count }).map(() => `
-        <div class="skeleton-card">
-            <div class="skeleton-line w-80 skeleton-pulse"></div>
-            <div class="skeleton-line w-60 skeleton-pulse"></div>
-            <div class="skeleton-line w-40 skeleton-pulse"></div>
-            <div style="margin-top: 0.8rem; display: flex; gap: 0.4rem;">
-                <span class="skeleton-pill skeleton-pulse"></span>
-                <span class="skeleton-pill skeleton-pulse" style="width: 60px;"></span>
+        <div class="skeleton-row">
+            <span class="skeleton-avatar skeleton-pulse"></span>
+            <div class="skeleton-copy">
+                <span class="skeleton-line w-80 skeleton-pulse"></span>
+                <span class="skeleton-line w-60 skeleton-pulse"></span>
+                <span class="skeleton-line w-40 skeleton-pulse"></span>
             </div>
         </div>
     `).join('');
 
-    container.innerHTML = `<div class="skeleton-grid">${skeletons}</div>`;
+    container.innerHTML = skeletons;
 }
 
 export function renderBooksLoadError() {
     const container = document.getElementById('booksContainer');
     if (container) {
-        container.innerHTML = renderEmptyState('triangle-exclamation', 'Failed to load books', 'Refresh the catalog or check whether the backend is available.');
+        container.innerHTML = renderEmptyState('triangle-exclamation', t('error.loadBooksTitle'), t('error.loadBooksCopy'));
     }
 }
 
@@ -373,9 +399,9 @@ export function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <div class="toast-content">
             <i class="fas fa-${getToastIcon(type)}"></i>
-            <span>${message}</span>
+            <span>${escapeHtml(message)}</span>
         </div>
     `;
 

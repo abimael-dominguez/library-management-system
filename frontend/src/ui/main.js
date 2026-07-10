@@ -1,23 +1,26 @@
 import { createAppState } from '../application/state/app-state.js';
 import { createLibraryService } from '../application/services/library-service.js';
+import {
+    detectLanguage,
+    getLanguageLabel,
+    setCurrentLanguage,
+    t,
+    translateStatic
+} from '../domain/i18n.js';
 import { matchesLoanSearch, isMobileDevice } from '../domain/library.js';
 import { PALETTES } from '../domain/palettes.js';
 import { createApiClient } from '../infrastructure/api/client.js';
 import {
+    loadLanguagePreference,
     loadPalettePreference,
     loadThemePreference,
+    saveLanguagePreference,
     savePalettePreference,
     saveThemePreference
 } from '../infrastructure/storage/preferences.js';
 import {
-    closeFabSheet,
-    closeMobileMenu,
     closeModal,
-    isFabSheetOpen,
-    isMobileMenuOpen,
-    showModal,
-    toggleFabSheet,
-    toggleMobileMenu
+    showModal
 } from './modals.js';
 import {
     ensureToastAnimation,
@@ -44,6 +47,11 @@ const libraryService = createLibraryService(createApiClient());
 
 function initializeApp() {
     ensureToastAnimation();
+
+    state.language = loadLanguagePreference() || detectLanguage();
+    setCurrentLanguage(state.language);
+    translateStatic(document, state.language);
+
     state.theme = loadThemePreference();
     applyTheme(state.theme);
 
@@ -52,7 +60,7 @@ function initializeApp() {
 
     setupEventListeners();
     optimizeForMobile();
-    applyView('home');
+    applyView('home', { scroll: false });
     refreshAppData();
 }
 
@@ -98,12 +106,6 @@ function setupEventListeners() {
         if (activeModal) {
             closeModal(activeModal.id);
         }
-        if (isMobileMenuOpen()) {
-            closeMobileMenu();
-        }
-        if (isFabSheetOpen()) {
-            closeFabSheet();
-        }
     });
 
     let lastTouchEnd = 0;
@@ -146,16 +148,19 @@ async function refreshAppData() {
     } catch (error) {
         console.error('Refresh failed', error);
         renderBooksLoadError();
-        showToast(`API call failed: ${error.message}`, 'error');
+        showToast(t('toast.apiFailed', { message: error.message }), 'error');
     }
 }
 
 function renderAll() {
+    setCurrentLanguage(state.language);
+    translateStatic(document, state.language);
     renderMainCollection();
     renderStats(state);
     renderMembersList(state.members);
     renderEmployeesList(state.employees);
     renderImportSummary(state.importSummary);
+    updateLanguageControls();
     renderViewState();
 }
 
@@ -180,68 +185,56 @@ function renderMainCollection() {
 
 function renderViewState() {
     const currentView = state.currentView || 'home';
-    const activeSection = getActiveSectionKey();
 
     document.querySelectorAll('[data-view]').forEach(section => {
-        section.classList.toggle('view-hidden', section.dataset.view !== currentView);
+        const views = section.dataset.view.split(/\s+/).filter(Boolean);
+        section.classList.toggle('view-hidden', !views.includes(currentView));
     });
 
     document.querySelectorAll('[data-nav-target]').forEach(item => {
         item.classList.toggle('active', item.dataset.navTarget === currentView);
     });
-
-    document.querySelectorAll('[data-section-target]').forEach(item => {
-        item.classList.toggle('active', item.dataset.sectionTarget === activeSection);
-    });
-
-    const showBackHome = activeSection !== 'home';
-    const backHomeButton = document.getElementById('backHomeButton');
-    const collectionHomeButton = document.getElementById('collectionHomeButton');
-    if (backHomeButton) {
-        backHomeButton.classList.toggle('view-hidden', !showBackHome);
-    }
-    if (collectionHomeButton) {
-        const showCollectionBack = currentView === 'home' && activeSection !== 'home';
-        collectionHomeButton.classList.toggle('view-hidden', !showCollectionBack);
-    }
+    document.body.dataset.workspaceView = currentView;
 }
 
-function getActiveSectionKey() {
-    if (state.currentView === 'members') {
-        return 'members';
-    }
-
-    if (state.currentView === 'employees') {
-        return 'employees';
-    }
-
-    if (state.collectionMode === 'active_loans') {
-        return 'loans';
-    }
-
-    if (state.collectionMode === 'overdue_loans') {
-        return 'overdue';
-    }
-
-    if (state.collectionMode === 'books') {
-        return 'home';
-    }
-
-    return 'home';
-}
-
-function applyView(view) {
+function applyView(view, options = {}) {
     state.currentView = view;
     renderViewState();
+
+    if (options.scroll !== false) {
+        window.scrollTo({ top: 0, behavior: options.smooth === false ? 'auto' : 'smooth' });
+    }
 }
 
 function navigateTo(view) {
-    applyView(view);
-    if (view === 'home') {
+    if (view === 'members') {
+        navigateToWorkspace('members');
+        return;
+    }
+
+    if (view === 'employees') {
+        navigateToWorkspace('more');
+        return;
+    }
+
+    navigateToWorkspace(view);
+}
+
+function navigateToWorkspace(view) {
+    const allowedViews = ['home', 'catalog', 'loans', 'members', 'more'];
+    const nextView = allowedViews.includes(view) ? view : 'home';
+
+    if (nextView === 'home' || nextView === 'catalog') {
         state.collectionMode = 'books';
         renderMainCollection();
     }
-    closeMobileMenu();
+
+    if (nextView === 'loans') {
+        state.collectionMode = 'active_loans';
+        renderMainCollection();
+    }
+
+    applyView(nextView);
 }
 
 async function searchBooks(query) {
@@ -268,6 +261,10 @@ function selectBook(bookId) {
     if (input) {
         input.value = book.title;
     }
+    state.collectionMode = 'books';
+    renderCollectionHeader('books');
+    renderBooks([book]);
+    applyView('catalog');
     hideSearchResults();
 }
 
@@ -346,7 +343,7 @@ async function createLoan() {
     const formData = new FormData(form);
 
     if (!formData.get('book_copy_id') || !formData.get('member_id') || !formData.get('loan_date') || !formData.get('due_date')) {
-        showToast('Por favor completa todos los campos requeridos', 'error');
+        showToast(t('toast.loanRequired'), 'error');
         return;
     }
 
@@ -360,11 +357,12 @@ async function createLoan() {
 
     try {
         await libraryService.createLoan(payload);
-        showToast('Loan created successfully!', 'success');
+        showToast(t('toast.loanCreated'), 'success');
         closeModal('createLoanModal');
         await refreshAppData();
+        navigateToWorkspace('loans');
     } catch (error) {
-        showToast(error.message || 'Could not create the loan. Please try again.', 'error');
+        showToast(error.message || t('toast.loanCreateFailed'), 'error');
     }
 }
 
@@ -389,7 +387,7 @@ async function searchBooksForLoan(query) {
 
 function selectBookForLoan(bookCopyId, title) {
     if (!bookCopyId) {
-        showToast('That book has no available copies right now.', 'warning');
+        showToast(t('toast.bookUnavailable'), 'warning');
         return;
     }
 
@@ -400,6 +398,11 @@ function selectBookForLoan(bookCopyId, title) {
     if (search) search.value = decodeURIComponent(title);
     if (hidden) hidden.value = bookCopyId;
     if (results) results.style.display = 'none';
+}
+
+function startLoanFlow(bookCopyId, title) {
+    showCreateLoanModal();
+    selectBookForLoan(bookCopyId, title);
 }
 
 function searchEmployeesForLoan(query) {
@@ -466,7 +469,7 @@ async function returnBook() {
     const returnDate = formData.get('return_date');
 
     if (!loanId) {
-        showToast('Please select a loan first.', 'error');
+        showToast(t('toast.returnSelectLoan'), 'error');
         return;
     }
 
@@ -477,11 +480,12 @@ async function returnBook() {
 
     try {
         await libraryService.returnLoan(loanId, payload);
-        showToast('Book returned successfully!', 'success');
+        showToast(t('toast.returned'), 'success');
         closeModal('returnBookModal');
         await refreshAppData();
+        navigateToWorkspace('loans');
     } catch (error) {
-        showToast(error.message || 'Could not return the book. Please try again.', 'error');
+        showToast(error.message || t('toast.returnFailed'), 'error');
     }
 }
 
@@ -501,21 +505,22 @@ async function addBook() {
 
     try {
         await libraryService.createBook(payload);
-        showToast('Book added successfully!', 'success');
+        showToast(t('toast.bookAdded'), 'success');
         closeModal('addBookModal');
         await refreshAppData();
+        navigateToWorkspace('catalog');
     } catch (error) {
-        showToast(error.message || 'Failed to add book. Please try again.', 'error');
+        showToast(error.message || t('toast.bookAddFailed'), 'error');
     }
 }
 
 function showAddMemberModal() {
-    applyView('members');
+    navigateToWorkspace('members');
     showModal('addMemberModal');
 }
 
 function showAddEmployeeModal() {
-    applyView('employees');
+    navigateToWorkspace('more');
     showModal('addEmployeeModal');
 }
 
@@ -532,11 +537,12 @@ async function addMember() {
 
     try {
         await libraryService.createMember(payload);
-        showToast('Member registered successfully.', 'success');
+        showToast(t('toast.memberAdded'), 'success');
         closeModal('addMemberModal');
         await refreshAppData();
+        navigateToWorkspace('members');
     } catch (error) {
-        showToast(error.message || 'Could not register the member.', 'error');
+        showToast(error.message || t('toast.memberAddFailed'), 'error');
     }
 }
 
@@ -551,11 +557,12 @@ async function addEmployee() {
 
     try {
         await libraryService.createEmployee(payload);
-        showToast('Employee registered successfully.', 'success');
+        showToast(t('toast.employeeAdded'), 'success');
         closeModal('addEmployeeModal');
         await refreshAppData();
+        navigateToWorkspace('more');
     } catch (error) {
-        showToast(error.message || 'Could not register the employee.', 'error');
+        showToast(error.message || t('toast.employeeAddFailed'), 'error');
     }
 }
 
@@ -568,7 +575,7 @@ function setTheme(theme) {
     state.theme = nextTheme;
     applyTheme(nextTheme);
     saveThemePreference(nextTheme);
-    showToast(`${nextTheme === 'dark' ? 'Dark' : 'Light'} mode enabled`, 'info');
+    showToast(t('toast.themeChanged', { theme: t(`theme.${nextTheme}`) }), 'info');
 }
 
 function applyTheme(theme) {
@@ -603,6 +610,28 @@ function applyPalette(name) {
     root.style.setProperty('--primary-dark', palette.primaryDark);
     root.style.setProperty('--success', palette.success);
     savePalettePreference(name);
+    updatePaletteControls();
+}
+
+function updatePaletteControls() {
+    document.querySelectorAll('.palette-chip').forEach(button => {
+        const onclick = button.getAttribute('onclick') || '';
+        button.classList.toggle('active', onclick.includes(`'${state.palette}'`));
+    });
+}
+
+function setLanguage(language) {
+    state.language = setCurrentLanguage(language);
+    saveLanguagePreference(state.language);
+    translateStatic(document, state.language);
+    renderAll();
+    showToast(t('toast.languageChanged', { language: getLanguageLabel(state.language) }), 'info');
+}
+
+function updateLanguageControls() {
+    document.querySelectorAll('[data-language-option]').forEach(button => {
+        button.classList.toggle('active', button.dataset.languageOption === state.language);
+    });
 }
 
 function filterBooks(type) {
@@ -610,21 +639,22 @@ function filterBooks(type) {
         return;
     }
     state.collectionMode = 'books';
-    state.currentView = 'home';
+    state.currentView = 'catalog';
     renderViewState();
     renderMainCollection();
-    showToast('Showing all books', 'info');
+    showToast(t('toast.showingBooks'), 'info');
 }
 
 function filterLoans(mode) {
     state.collectionMode = mode === 'overdue' ? 'overdue_loans' : 'active_loans';
-    state.currentView = 'home';
+    state.currentView = 'loans';
     renderViewState();
     renderMainCollection();
     const message = mode === 'overdue'
-        ? 'Showing overdue loans'
-        : 'Showing open loans';
+        ? t('toast.showingOverdueLoans')
+        : t('toast.showingOpenLoans');
     showToast(message, 'info');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function optimizeForMobile() {
@@ -635,7 +665,7 @@ function optimizeForMobile() {
     document.documentElement.style.setProperty('--animation-duration', '0.2s');
     document.body.style.touchAction = 'manipulation';
 
-    document.querySelectorAll('.btn, .btn-icon, .stat-card').forEach(button => {
+    document.querySelectorAll('.btn, .btn-icon, .kpi-card, .action-tile').forEach(button => {
         button.style.webkitUserSelect = 'none';
         button.style.userSelect = 'none';
     });
@@ -647,14 +677,13 @@ window.LibraryUI = {
     addMember,
     applyPalette,
     setTheme,
-    closeFabSheet,
-    closeMobileMenu,
     closeModal,
     createLoan,
     filterBooks,
     filterLoans,
     loadBooks: refreshAppData,
     navigateTo,
+    navigateToWorkspace,
     refreshAppData,
     returnBook,
     startReturnFlow,
@@ -663,6 +692,7 @@ window.LibraryUI = {
     searchBooksForLoan,
     searchEmployeesForLoan,
     searchMembersForLoan,
+    setLanguage,
     selectBook,
     selectBookForLoan,
     selectEmployeeForLoan,
@@ -673,8 +703,7 @@ window.LibraryUI = {
     showAddMemberModal,
     showCreateLoanModal,
     showReturnBookModal,
-    toggleFabSheet,
-    toggleMobileMenu,
+    startLoanFlow,
     toggleTheme
 };
 
