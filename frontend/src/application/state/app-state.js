@@ -9,6 +9,7 @@ export function createAppState() {
         currentView: 'home',
         collectionMode: 'books',
         theme: 'light',
-        palette: 'indigo'
+        palette: 'indigo',
+        language: 'es'
     };
 }

@@ -1,3 +1,5 @@
+import { t } from './i18n.js';
+
 export function escapeHtml(text) {
     const map = {
         '&': '&amp;',
@@ -21,7 +23,7 @@ export function renderAvailability(book) {
     return `
         <div class="availability">
             <div class="availability-text">
-                <span>Availability</span>
+                <span>${t('availability.label')}</span>
                 <span>${available} / ${total}</span>
             </div>
             <div class="availability-bar">
@@ -32,16 +34,9 @@ export function renderAvailability(book) {
 }
 
 export function getStatusLabel(status) {
-    const labels = {
-        in_progress: 'Active loan',
-        returned: 'Returned',
-        overdue: 'Overdue',
-        available: 'Available',
-        loaned: 'Loaned',
-        damaged: 'Damaged',
-        lost: 'Lost'
-    };
-    return labels[status] || status;
+    const key = `status.${status}`;
+    const label = t(key);
+    return label === key ? status : label;
 }
 
 export function matchesLoanSearch(loan, query) {
