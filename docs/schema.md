@@ -13,11 +13,11 @@ The domain model should remain the same across both databases. Environment-speci
 
 The current implementation source of truth is:
 
-- `src/infrastructure/models.py` for the active SQLAlchemy schema
+- `src/infrastructure/persistence/models.py` for the active SQLAlchemy schema
 
 Important note:
 
-- `create_tables.sql` is not fully aligned with the current SQLAlchemy models. In particular, it still uses `SERIAL` integer IDs, while the application currently uses string-based application-generated IDs such as `String(36)` and `String(64)`.
+- `create_tables.sql` is a PostgreSQL-oriented reference aligned with the current SQLAlchemy model layer, but schema changes should still be made in SQLAlchemy first and later managed through migrations.
 
 ## Logical Schema Overview
 
@@ -54,15 +54,14 @@ This table stores information about a book title, not the individual physical co
 | `genre` | The book genre | `String(100)`, optional |
 | `pages` | Number of pages | `Integer`, optional |
 | `max_loan_weeks` | Default number of allowed loan weeks | `Integer`, required, default `3` |
-| `total_copies` | Total registered copies for the title | `Integer`, required, default `1` |
 | `created_at` | Record creation timestamp | `DateTime`, auto-managed |
 | `updated_at` | Record update timestamp | `DateTime`, auto-managed |
 
 Relationship notes:
 
 - One `book` can have many `book_copy` records
-- Deleting a `book` cascades to its copies in the current implementation
-- The API may expose computed availability fields for a book, but those are not stored directly in this table
+- Deleting a `book` is restricted when physical copies exist
+- The API exposes `total_copies`, `available_copies`, and `first_available_copy_id` as computed response fields; they are not stored directly in `book`
 
 ### 2. `book_copy` (Physical Inventory Item)
 
@@ -71,17 +70,21 @@ This table tracks each physical copy of a book.
 | Field Name | Description | Data Type / Notes |
 |---|---|---|
 | `book_copy_id` | Primary Key (PK) | `String(64)` application-generated copy ID |
-| `book_id` | Foreign Key (FK) | References `book.book_id`, required, indexed, `ON DELETE CASCADE` |
-| `status` | Current physical state and availability | `String(20)`, required, default `available` |
+| `book_id` | Foreign Key (FK) | References `book.book_id`, required, indexed, `ON DELETE RESTRICT` |
+| `status` | Current physical condition | `String(20)`, required, default `available` |
 | `created_at` | Record creation timestamp | `DateTime`, auto-managed |
 | `updated_at` | Record update timestamp | `DateTime`, auto-managed |
 
 Allowed `status` values:
 
 - `available`
-- `loaned`
 - `damaged`
 - `lost`
+
+Availability note:
+
+- A copy is loanable only when `book_copy.status = 'available'` and no `loan` exists for that copy with `status = 'in_progress'`
+- `book_copy.status` intentionally does not duplicate loan state
 
 ### 3. `member` (Library Patrons)
 
@@ -94,7 +97,7 @@ Stores information about borrowers.
 | `last_name` | Member last name | `String(100)`, indexed, required |
 | `address` | Member mailing address | `String(255)`, optional |
 | `phone` | Contact phone number | `String(20)`, optional |
-| `email` | Member email address | `String(254)`, unique, required |
+| `email` | Member email address | `String(254)`, unique, optional |
 | `registration_date` | Date the member joined | `Date`, required, default current date |
 | `status` | Member account status | `String(20)`, required, default `active` |
 | `created_at` | Record creation timestamp | `DateTime`, auto-managed |
@@ -126,8 +129,8 @@ Records each borrowing transaction for a specific physical copy.
 | Field Name | Description | Data Type / Notes |
 |---|---|---|
 | `loan_id` | Primary Key (PK) | `String(36)` application-generated ID |
-| `book_copy_id` | Foreign Key (FK) | References `book_copy.book_copy_id`, required, indexed, `ON DELETE CASCADE` |
-| `member_id` | Foreign Key (FK) | References `member.member_id`, required, indexed, `ON DELETE CASCADE` |
+| `book_copy_id` | Foreign Key (FK) | References `book_copy.book_copy_id`, required, indexed, `ON DELETE RESTRICT` |
+| `member_id` | Foreign Key (FK) | References `member.member_id`, required, indexed, `ON DELETE RESTRICT` |
 | `employee_id` | Foreign Key (FK) | References `employee.employee_id`, optional, `ON DELETE SET NULL` |
 | `loan_date` | Date the book was borrowed | `Date`, required |
 | `due_date` | Estimated return date | `Date`, required |
@@ -140,16 +143,23 @@ Allowed `status` values:
 
 - `in_progress`
 - `returned`
-- `overdue`
+
+Overdue note:
+
+- `overdue` is computed by the application when an `in_progress` loan has a `due_date` before the current date
+- It is not persisted as a database status, so active-loan uniqueness remains stable
 
 ## Constraints And Business Rules
 
 - `loan.due_date >= loan.loan_date`
 - `loan.actual_return_date` must be null or on/after `loan.loan_date`
+- `loan.status = 'in_progress'` requires `actual_return_date IS NULL`
+- `loan.status = 'returned'` requires `actual_return_date IS NOT NULL`
 - Only one active loan per copy is allowed
 - A returned copy can later be loaned again
 - A `loan` always points to a specific `book_copy`, not just to a `book`
-- The API exposes `available_copies` and `first_available_copy_id` as computed response fields, but those are not stored directly in the `book` table
+- A book or member cannot be physically deleted while referenced by circulation records
+- The API exposes `total_copies`, `available_copies`, and `first_available_copy_id` as computed response fields, but those are not stored directly in the `book` table
 
 ## Current Implementation Notes
 
@@ -160,6 +170,8 @@ The current SQLAlchemy implementation in `src/infrastructure/models.py` adds the
 - The one-active-loan-per-copy rule is enforced through the filtered unique index `ix_loan_one_active_copy`
 - That filtered unique index is defined for both SQLite and PostgreSQL in SQLAlchemy
 - Primary keys are application-generated strings, not auto-increment integers
+- The CSV seed/import path rebuilds the local schema before importing because the project does not yet use migrations
+- The seed path skips incomplete active loans instead of inventing borrowers or loan dates, and records row-level issues in `data/local/last_seed_summary.json`
 
 ## SQLite And PostgreSQL Notes
 
@@ -179,7 +191,7 @@ The logical schema is meant to stay the same, but some implementation behavior m
 - Make sure indexes and filtered unique constraints are created consistently in production
 - Confirm timestamp behavior and timezone expectations explicitly
 - Preserve string-based IDs unless there is a deliberate migration plan to another identifier strategy
-- Treat `create_tables.sql` as outdated until it is rewritten to match the application schema
+- Replace schema rebuilds with Alembic migrations before production data needs to be preserved
 
 ## Recommendation
 

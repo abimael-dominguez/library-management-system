@@ -20,7 +20,6 @@ CREATE TABLE book (
     genre VARCHAR(100),
     pages INTEGER,
     max_loan_weeks INTEGER NOT NULL DEFAULT 3,
-    total_copies INTEGER NOT NULL DEFAULT 1,
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
 );
@@ -34,11 +33,11 @@ CREATE INDEX idx_book_author ON book(author);
 -- ---------------------------------------------------------------------------
 CREATE TABLE book_copy (
     book_copy_id VARCHAR(64) PRIMARY KEY,
-    book_id VARCHAR(36) NOT NULL REFERENCES book(book_id) ON DELETE CASCADE,
+    book_id VARCHAR(36) NOT NULL REFERENCES book(book_id) ON DELETE RESTRICT,
     status VARCHAR(20) NOT NULL DEFAULT 'available',
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
-    CONSTRAINT ck_book_copy_status CHECK (status IN ('available', 'loaned', 'damaged', 'lost'))
+    CONSTRAINT ck_book_copy_status CHECK (status IN ('available', 'damaged', 'lost'))
 );
 
 CREATE INDEX idx_book_copy_book_id ON book_copy(book_id);
@@ -53,7 +52,7 @@ CREATE TABLE member (
     last_name VARCHAR(100) NOT NULL,
     address VARCHAR(255),
     phone VARCHAR(20),
-    email VARCHAR(254) NOT NULL UNIQUE,
+    email VARCHAR(254) UNIQUE,
     registration_date DATE NOT NULL DEFAULT CURRENT_DATE,
     status VARCHAR(20) NOT NULL DEFAULT 'active',
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
@@ -83,8 +82,8 @@ CREATE TABLE employee (
 -- ---------------------------------------------------------------------------
 CREATE TABLE loan (
     loan_id VARCHAR(36) PRIMARY KEY,
-    book_copy_id VARCHAR(64) NOT NULL REFERENCES book_copy(book_copy_id) ON DELETE CASCADE,
-    member_id VARCHAR(36) NOT NULL REFERENCES member(member_id) ON DELETE CASCADE,
+    book_copy_id VARCHAR(64) NOT NULL REFERENCES book_copy(book_copy_id) ON DELETE RESTRICT,
+    member_id VARCHAR(36) NOT NULL REFERENCES member(member_id) ON DELETE RESTRICT,
     employee_id VARCHAR(36) REFERENCES employee(employee_id) ON DELETE SET NULL,
     loan_date DATE NOT NULL,
     due_date DATE NOT NULL,
@@ -92,10 +91,14 @@ CREATE TABLE loan (
     status VARCHAR(20) NOT NULL DEFAULT 'in_progress',
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
-    CONSTRAINT ck_loan_status CHECK (status IN ('in_progress', 'returned', 'overdue')),
+    CONSTRAINT ck_loan_status CHECK (status IN ('in_progress', 'returned')),
     CONSTRAINT ck_due_date_after_loan_date CHECK (due_date >= loan_date),
     CONSTRAINT ck_actual_return_after_loan_date CHECK (
         actual_return_date IS NULL OR actual_return_date >= loan_date
+    ),
+    CONSTRAINT ck_loan_status_return_date_consistency CHECK (
+        (status = 'returned' AND actual_return_date IS NOT NULL)
+        OR (status = 'in_progress' AND actual_return_date IS NULL)
     )
 );
 
