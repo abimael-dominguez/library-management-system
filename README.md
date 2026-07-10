@@ -79,9 +79,9 @@ tests/
 - Python 3.11+
 - Docker and Docker Compose for the containerized workflow
 
-## Quick Start With Docker
+## Recommended Docker Workflow
 
-This is the fastest way to run the project locally.
+Use this workflow for day-to-day local development. It rebuilds the API image when needed, starts the API and frontend in the background, and keeps the local database refresh explicit.
 
 ### 1. Create the local environment file
 
@@ -89,13 +89,17 @@ This is the fastest way to run the project locally.
 cp .env.example .env
 ```
 
-### 2. Start the API and frontend
+### 2. Start or refresh the API and frontend
 
 ```bash
-docker compose up api frontend --remove-orphans
+docker compose up -d --build api frontend --remove-orphans
 ```
 
-### 3. Seed the local database in a separate terminal
+The `--build` flag is intentionally part of the recommended command. It prevents stale API images after changes to files copied into the Docker image, such as `scripts/`, `requirements.txt`, or `Dockerfile`.
+
+The frontend is currently a static app mounted from `frontend/src`, so it does not need a separate frontend build. After frontend changes, refresh `http://localhost:8080`.
+
+### 3. Seed the local database
 
 ```bash
 docker compose run --rm api python scripts/seed_local_db.py
@@ -115,6 +119,47 @@ The seed script is intentionally explicit and local-only: it refuses to run outs
 
 ```bash
 docker compose down --remove-orphans
+```
+
+## Docker Command Reference
+
+### Daily start
+
+```bash
+docker compose up -d --build api frontend --remove-orphans
+docker compose run --rm api python scripts/seed_local_db.py
+```
+
+### Daily stop
+
+```bash
+docker compose down --remove-orphans
+```
+
+### Rebuild only the API image
+
+```bash
+docker compose build api
+```
+
+Use this when you want to rebuild without starting or recreating containers. For normal local work, prefer `docker compose up -d --build api frontend --remove-orphans`.
+
+### Rebuild local data from the CSV
+
+```bash
+docker compose run --rm api python scripts/seed_local_db.py
+```
+
+### Run tests with Docker
+
+```bash
+docker compose run --rm test
+```
+
+The helper script runs the same Docker test service:
+
+```bash
+./scripts/test.sh
 ```
 
 ## Local Development Without Docker
@@ -164,39 +209,41 @@ uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 python3 -m http.server 8080 --directory frontend/src
 ```
 
-## Common Commands
+## Common API Checks
 
-### Start local services
-
-```bash
-docker compose up api frontend --remove-orphans
-```
-
-### Stop local services
+### Health check
 
 ```bash
-docker compose down --remove-orphans
+curl http://localhost:8000/health
 ```
 
-### Rebuild local data from the CSV
-
-```bash
-docker compose run --rm api python scripts/seed_local_db.py
-```
-
-### Review import warnings
+### Import summary
 
 ```bash
 curl http://localhost:8000/import-summary
 ```
 
-### Run tests with Docker
+### Search books
 
 ```bash
-./scripts/test.sh
+curl "http://localhost:8000/search?q=gracia&limit=5" | python3 -m json.tool
 ```
 
-### Run tests without Docker
+### List open loans
+
+```bash
+curl "http://localhost:8000/loans?limit=5" | python3 -m json.tool
+```
+
+## Test Commands
+
+### Docker
+
+```bash
+docker compose run --rm test
+```
+
+### Local virtual environment
 
 ```bash
 pytest tests/unit tests/functional
