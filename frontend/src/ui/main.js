@@ -79,6 +79,9 @@ function initializeApp() {
 }
 
 function setupEventListeners() {
+    normalizeButtonTypes();
+    guardFormSubmits();
+
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         searchInput.addEventListener('input', event => {
@@ -130,6 +133,24 @@ function setupEventListeners() {
         }
         lastTouchEnd = now;
     }, false);
+}
+
+function normalizeButtonTypes(root = document) {
+    root.querySelectorAll('button:not([type])').forEach(button => {
+        button.type = 'button';
+    });
+}
+
+function guardFormSubmits() {
+    ['addBookForm', 'createLoanForm', 'returnBookForm', 'addMemberForm', 'addEmployeeForm'].forEach(formId => {
+        const form = document.getElementById(formId);
+        if (!form) {
+            return;
+        }
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+        });
+    });
 }
 
 function hideAllSearchResults() {

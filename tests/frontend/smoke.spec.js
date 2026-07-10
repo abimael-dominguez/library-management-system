@@ -58,6 +58,21 @@ async function clickVisibleNav(page, target) {
   await expect(page.locator('body')).toHaveAttribute('data-workspace-view', target);
 }
 
+function searchTermFrom(value) {
+  const term = String(value || '')
+    .split(/\s+/)
+    .find(part => part.replace(/[^\p{L}\p{N}]/gu, '').length >= 2);
+  return term || 'gracia';
+}
+
+async function getFirstResult(request, endpoint, collectionName) {
+  const response = await request.get(`${apiBaseUrl}${endpoint}`);
+  expect(response.ok()).toBeTruthy();
+  const payload = await response.json();
+  expect(payload[collectionName].length).toBeGreaterThan(0);
+  return payload[collectionName][0];
+}
+
 test('mobile first screen exposes circulation controls without initial scroll', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'mobile-only viewport assertion');
 
@@ -119,6 +134,56 @@ test('selecting a loan book result does not submit or reload the form', async ({
 
   await expect(page.locator('#createLoanModal')).toHaveClass(/active/);
   await expect(page.locator('input[name="book_copy_id"]')).not.toHaveValue('');
+  expect(new URL(page.url()).search).toBe('');
+
+  await page.locator('#bookSearch').press('Enter');
+  await expect(page.locator('#createLoanModal')).toHaveClass(/active/);
+  expect(new URL(page.url()).search).toBe('');
+
+  assertNoCriticalNoise();
+});
+
+test('selecting member and employee loan results does not submit the form', async ({ page, request }) => {
+  const member = await getFirstResult(request, '/members?limit=1', 'members');
+  const employee = await getFirstResult(request, '/employees?limit=1', 'employees');
+  const assertNoCriticalNoise = await openApp(page);
+
+  await page.locator('.action-loan:visible').first().click();
+  await expect(page.locator('#createLoanModal')).toHaveClass(/active/);
+
+  await page.locator('#memberSearch').pressSequentially(searchTermFrom(`${member.first_name} ${member.last_name}`));
+  await expect(page.locator('#memberSearchResults .search-result-item').first()).toBeVisible();
+  await page.locator('#memberSearchResults .search-result-item').first().click();
+  await expect(page.locator('input[name="member_id"]')).not.toHaveValue('');
+  expect(new URL(page.url()).search).toBe('');
+
+  await page.locator('#employeeSearch').pressSequentially(searchTermFrom(`${employee.first_name} ${employee.last_name}`));
+  await expect(page.locator('#employeeSearchResults .search-result-item').first()).toBeVisible();
+  await page.locator('#employeeSearchResults .search-result-item').first().click();
+  await expect(page.locator('input[name="employee_id"]')).not.toHaveValue('');
+  await expect(page.locator('#createLoanModal')).toHaveClass(/active/);
+  expect(new URL(page.url()).search).toBe('');
+
+  assertNoCriticalNoise();
+});
+
+test('selecting a return loan result does not submit or reload the form', async ({ page, request }) => {
+  const loan = await getFirstResult(request, '/loans?status=open&limit=1', 'loans');
+  const assertNoCriticalNoise = await openApp(page);
+
+  await page.locator('.action-return:visible').first().click();
+  await expect(page.locator('#returnBookModal')).toHaveClass(/active/);
+
+  await page.locator('#loanSearch').pressSequentially(searchTermFrom(loan.book_title || loan.member_name));
+  await expect(page.locator('#loanSearchResults .search-result-item').first()).toBeVisible();
+  await page.locator('#loanSearchResults .search-result-item').first().click();
+
+  await expect(page.locator('#returnBookModal')).toHaveClass(/active/);
+  await expect(page.locator('input[name="loan_id"]')).not.toHaveValue('');
+  expect(new URL(page.url()).search).toBe('');
+
+  await page.locator('#loanSearch').press('Enter');
+  await expect(page.locator('#returnBookModal')).toHaveClass(/active/);
   expect(new URL(page.url()).search).toBe('');
 
   assertNoCriticalNoise();
