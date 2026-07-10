@@ -31,8 +31,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--rebuild-schema",
         action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Drop and recreate the local schema before seeding. Enabled by default for local dev.",
+        default=False,
+        help="Drop and recreate the schema before seeding. Disabled by default; prefer Alembic migrations.",
     )
     parser.add_argument(
         "--force",
@@ -54,7 +54,8 @@ def ensure_safe_environment(*, force: bool) -> None:
 def main() -> None:
     args = parse_args()
     ensure_safe_environment(force=args.force)
-    init_db()
+    if settings.auto_create_db:
+        init_db()
     with SessionLocal() as db:
         if args.demo:
             summary = seed_demo_data(db, rebuild_schema=args.rebuild_schema)

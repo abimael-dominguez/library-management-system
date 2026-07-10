@@ -74,7 +74,7 @@ class SqlAlchemyLoanRepository(LoanRepository):
             .where(LoanModel.loan_id == loan_id)
         )
         if for_update:
-            stmt = stmt.with_for_update()
+            stmt = stmt.with_for_update(of=LoanModel)
         model = self._db.scalars(stmt).first()
         return _to_domain_loan(model) if model else None
 

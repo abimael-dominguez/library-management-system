@@ -42,7 +42,12 @@ class BookModel(TimestampMixin, Base):
     publication_year: Mapped[int | None] = mapped_column(Integer)
     genre: Mapped[str | None] = mapped_column(String(100))
     pages: Mapped[int | None] = mapped_column(Integer)
-    max_loan_weeks: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
+    max_loan_weeks: Mapped[int] = mapped_column(
+        Integer,
+        default=3,
+        server_default="3",
+        nullable=False,
+    )
 
     copies: Mapped[list["BookCopyModel"]] = relationship(
         back_populates="book",
@@ -62,7 +67,12 @@ class BookCopyModel(TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    status: Mapped[str] = mapped_column(String(20), default="available", nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(20),
+        default="available",
+        server_default="available",
+        nullable=False,
+    )
 
     book: Mapped["BookModel"] = relationship(back_populates="copies")
     loans: Mapped[list["LoanModel"]] = relationship(back_populates="book_copy")
@@ -80,8 +90,18 @@ class MemberModel(TimestampMixin, Base):
     address: Mapped[str | None] = mapped_column(String(255))
     phone: Mapped[str | None] = mapped_column(String(20))
     email: Mapped[str | None] = mapped_column(String(254), unique=True)
-    registration_date: Mapped[date] = mapped_column(Date, default=date.today, nullable=False)
-    status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)
+    registration_date: Mapped[date] = mapped_column(
+        Date,
+        default=date.today,
+        server_default=func.current_date(),
+        nullable=False,
+    )
+    status: Mapped[str] = mapped_column(
+        String(20),
+        default="active",
+        server_default="active",
+        nullable=False,
+    )
 
     loans: Mapped[list["LoanModel"]] = relationship(back_populates="member")
 
@@ -133,7 +153,12 @@ class LoanModel(TimestampMixin, Base):
     loan_date: Mapped[date] = mapped_column(Date, nullable=False)
     due_date: Mapped[date] = mapped_column(Date, nullable=False)
     actual_return_date: Mapped[date | None] = mapped_column(Date)
-    status: Mapped[str] = mapped_column(String(20), default="in_progress", nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(20),
+        default="in_progress",
+        server_default="in_progress",
+        nullable=False,
+    )
 
     book_copy: Mapped["BookCopyModel"] = relationship(back_populates="loans")
     member: Mapped["MemberModel"] = relationship(back_populates="loans")

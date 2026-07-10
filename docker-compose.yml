@@ -1,17 +1,40 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: lms-db-local
+    ports:
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: lms
+      POSTGRES_PASSWORD: lms
+      POSTGRES_DB: lms
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-test-db.sql:/docker-entrypoint-initdb.d/01-init-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lms -d lms"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   api:
     build: .
     container_name: lms-api-local
     ports:
       - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
       PYTHONPATH: /app:/app/src
       APP_ENV: local
-      DATABASE_URL: sqlite:///./data/local/library.db
-      AUTO_CREATE_DB: "true"
-      CORS_ORIGINS: http://localhost:8080,http://127.0.0.1:8080
+      DATABASE_URL: postgresql+psycopg://lms:lms@db:5432/lms
+      AUTO_CREATE_DB: "false"
+      CORS_ORIGINS: http://localhost:8080,http://127.0.0.1:8080,http://frontend:8080
     volumes:
       - ./src:/app/src
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
       - ./data:/app/data
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
 
@@ -27,14 +50,22 @@ services:
 
   test:
     build: .
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       - ./src:/app/src
       - ./tests:/app/tests
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
       - ./data:/app/data
       - ./htmlcov:/app/htmlcov
     environment:
       PYTHONPATH: /app:/app/src
       APP_ENV: test
-      DATABASE_URL: sqlite:///./data/local/test.db
-      AUTO_CREATE_DB: "true"
-    command: pytest tests/unit tests/functional --cov=src/application --cov=src/domain --cov=src/infrastructure --cov-report=term-missing --cov-report=html
+      DATABASE_URL: postgresql+psycopg://lms:lms@db:5432/lms_test
+      AUTO_CREATE_DB: "false"
+    command: sh -c "python scripts/reset_database.py && alembic upgrade head && pytest tests/unit tests/functional --cov=src/application --cov=src/domain --cov=src/infrastructure --cov-report=term-missing --cov-report=html"
+
+volumes:
+  postgres_data:
