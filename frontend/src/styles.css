@@ -441,15 +441,24 @@ button:disabled {
     align-items: center;
     justify-content: center;
     gap: 0.55rem;
+    min-width: 0;
     min-height: 50px;
     padding: 0.75rem;
     background: var(--surface-soft);
     color: var(--text);
     font-weight: 900;
+    text-align: center;
 }
 
 .action-tile i {
+    flex: 0 0 auto;
     color: var(--primary);
+}
+
+.action-tile span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    line-height: 1.15;
 }
 
 .action-loan {
@@ -1320,7 +1329,7 @@ button:disabled {
     }
 
     .command-panel {
-        grid-template-columns: minmax(220px, 0.85fr) minmax(300px, 1.25fr) auto;
+        grid-template-columns: minmax(220px, 0.8fr) minmax(260px, 1.2fr) minmax(260px, auto);
         align-items: center;
         gap: 1rem;
         padding: 1rem;
@@ -1331,7 +1340,8 @@ button:disabled {
     }
 
     .primary-actions {
-        grid-template-columns: repeat(3, minmax(120px, auto));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        min-width: 0;
     }
 
     .desktop-action {
@@ -1358,7 +1368,7 @@ button:disabled {
 
     .book-row,
     .loan-row {
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-columns: auto minmax(0, 1fr) minmax(118px, auto);
         align-items: center;
         padding: 1rem 1.1rem;
     }
