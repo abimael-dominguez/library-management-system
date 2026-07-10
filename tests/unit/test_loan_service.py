@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 import pytest
+from sqlalchemy import select
 
 from src.application.dtos.book_dto import BookCreateRequest
 from src.application.dtos.employee_dto import EmployeeCreateRequest
@@ -18,6 +19,7 @@ from src.infrastructure.adapters.employee_repository import SqlAlchemyEmployeeRe
 from src.infrastructure.adapters.loan_repository import SqlAlchemyLoanRepository
 from src.infrastructure.adapters.member_repository import SqlAlchemyMemberRepository
 from src.infrastructure.adapters.unit_of_work import SqlAlchemyUnitOfWork
+from src.infrastructure.persistence.models import BookCopyModel
 
 
 def _build_repos(db_session):
@@ -81,6 +83,10 @@ def test_create_loan_success(db_session):
     assert result.status == "in_progress"
     assert result.book_copy_id == book.first_available_copy_id
 
+    copy = db_session.scalar(select(BookCopyModel).where(BookCopyModel.book_copy_id == result.book_copy_id))
+    assert copy is not None
+    assert copy.status == "available"
+
 
 def test_create_loan_rejects_unavailable_copy(db_session):
     book, member, employee = create_dependencies(db_session)
@@ -101,7 +107,7 @@ def test_create_loan_rejects_unavailable_copy(db_session):
     )
     create_loan.execute(payload=payload)
 
-    with pytest.raises(DomainError, match="Book copy is not available for loan."):
+    with pytest.raises(DomainError, match="Book copy already has an active loan."):
         create_loan.execute(payload=payload)
 
 

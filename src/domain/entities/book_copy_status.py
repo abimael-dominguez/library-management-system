@@ -7,6 +7,5 @@ class BookCopyStatus(StrEnum):
     """Enumeration of all valid physical-copy states."""
 
     AVAILABLE = "available"
-    LOANED = "loaned"
     DAMAGED = "damaged"
     LOST = "lost"

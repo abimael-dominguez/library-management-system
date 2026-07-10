@@ -71,8 +71,6 @@ class LoanService:
             status=LoanStatus.IN_PROGRESS,
         )
         try:
-            book_copy.status = BookCopyStatus.LOANED
-            self._book_copy_repo.update_book_copy(book_copy)
             self._loan_repo.create_loan(loan)
             self._unit_of_work.commit()
         except Exception as exc:
@@ -102,9 +100,7 @@ class LoanService:
 
         loan.actual_return_date = return_date
         loan.status = LoanStatus.RETURNED
-        book_copy.status = BookCopyStatus.AVAILABLE
         self._loan_repo.update_loan(loan)
-        self._book_copy_repo.update_book_copy(book_copy)
         self._unit_of_work.commit()
         updated = self._loan_repo.get_loan_by_id(loan.loan_id)
         return self._normalize_status(updated) if updated else loan

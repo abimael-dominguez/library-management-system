@@ -8,9 +8,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .database import Base
 
 
-BOOK_COPY_STATUSES = ("available", "loaned", "damaged", "lost")
+BOOK_COPY_STATUSES = ("available", "damaged", "lost")
 MEMBER_STATUSES = ("active", "inactive", "suspended")
-LOAN_STATUSES = ("in_progress", "returned", "overdue")
+LOAN_STATUSES = ("in_progress", "returned")
 
 
 class TimestampMixin:
@@ -43,11 +43,9 @@ class BookModel(TimestampMixin, Base):
     genre: Mapped[str | None] = mapped_column(String(100))
     pages: Mapped[int | None] = mapped_column(Integer)
     max_loan_weeks: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
-    total_copies: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
     copies: Mapped[list["BookCopyModel"]] = relationship(
         back_populates="book",
-        cascade="all, delete-orphan",
     )
 
 
@@ -60,7 +58,7 @@ class BookCopyModel(TimestampMixin, Base):
     book_copy_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     book_id: Mapped[str] = mapped_column(
         String(36),
-        ForeignKey("book.book_id", ondelete="CASCADE"),
+        ForeignKey("book.book_id", ondelete="RESTRICT"),
         nullable=False,
         index=True,
     )
@@ -81,7 +79,7 @@ class MemberModel(TimestampMixin, Base):
     last_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     address: Mapped[str | None] = mapped_column(String(255))
     phone: Mapped[str | None] = mapped_column(String(20))
-    email: Mapped[str] = mapped_column(String(254), unique=True, nullable=False)
+    email: Mapped[str | None] = mapped_column(String(254), unique=True)
     registration_date: Mapped[date] = mapped_column(Date, default=date.today, nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)
 
@@ -108,18 +106,23 @@ class LoanModel(TimestampMixin, Base):
             "actual_return_date IS NULL OR actual_return_date >= loan_date",
             name="ck_actual_return_after_loan_date",
         ),
+        CheckConstraint(
+            "(status = 'returned' AND actual_return_date IS NOT NULL) "
+            "OR (status = 'in_progress' AND actual_return_date IS NULL)",
+            name="ck_loan_status_return_date_consistency",
+        ),
     )
 
     loan_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     book_copy_id: Mapped[str] = mapped_column(
         String(64),
-        ForeignKey("book_copy.book_copy_id", ondelete="CASCADE"),
+        ForeignKey("book_copy.book_copy_id", ondelete="RESTRICT"),
         nullable=False,
         index=True,
     )
     member_id: Mapped[str] = mapped_column(
         String(36),
-        ForeignKey("member.member_id", ondelete="CASCADE"),
+        ForeignKey("member.member_id", ondelete="RESTRICT"),
         nullable=False,
         index=True,
     )

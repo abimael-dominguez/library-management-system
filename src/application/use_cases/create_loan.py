@@ -15,7 +15,7 @@ from ..interfaces.unit_of_work import UnitOfWork
 
 
 class CreateLoanUseCase:
-    """Creates a new loan, marking the book copy as loaned inside a single transaction."""
+    """Creates a new loan for an available physical copy inside one transaction."""
 
     def __init__(
         self,
@@ -62,8 +62,6 @@ class CreateLoanUseCase:
             status=LoanStatus.IN_PROGRESS,
         )
         try:
-            book_copy.status = BookCopyStatus.LOANED
-            self._book_copy_repo.update_book_copy(book_copy)
             self._loan_repo.create_loan(loan)
             self._unit_of_work.commit()
         except Exception as exc:

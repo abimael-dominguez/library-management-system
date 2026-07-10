@@ -49,7 +49,6 @@ class BookService:
             genre=payload.genre,
             pages=payload.pages,
             max_loan_weeks=payload.max_loan_weeks,
-            total_copies=payload.total_copies,
         )
         try:
             self._book_repo.create_book(book)
@@ -73,6 +72,7 @@ class BookService:
 
     def _enrich(self, book: Book) -> Book:
         """Attach availability info that requires repository lookups."""
+        book.total_copies = self._book_copy_repo.count_total_copies(book.book_id)
         book.available_copies = self._book_copy_repo.count_available_copies(book.book_id)
         book.first_available_copy_id = self._book_copy_repo.get_first_available_copy_id(book.book_id)
         return book

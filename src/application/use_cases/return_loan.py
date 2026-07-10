@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import date
 
-from ...domain.entities.book_copy_status import BookCopyStatus
 from ...domain.entities.loan import Loan, LoanStatus
 from ...domain.exceptions import DomainError
 from ...domain.interfaces.book_copy_repository import BookCopyRepository
@@ -43,9 +42,7 @@ class ReturnLoanUseCase:
 
         loan.actual_return_date = return_date
         loan.status = LoanStatus.RETURNED
-        book_copy.status = BookCopyStatus.AVAILABLE
         self._loan_repo.update_loan(loan)
-        self._book_copy_repo.update_book_copy(book_copy)
         self._unit_of_work.commit()
 
         updated = self._loan_repo.get_loan_by_id(loan.loan_id)

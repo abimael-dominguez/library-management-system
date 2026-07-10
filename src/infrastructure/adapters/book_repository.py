@@ -6,9 +6,10 @@ from sqlalchemy.orm import Session
 from ...domain.entities.book import Book
 from ...domain.entities.book_copy import BookCopy
 from ...domain.entities.book_copy_status import BookCopyStatus
+from ...domain.entities.loan import LoanStatus
 from ...domain.interfaces.book_copy_repository import BookCopyRepository
 from ...domain.interfaces.book_repository import BookRepository
-from ..persistence.models import BookCopyModel, BookModel
+from ..persistence.models import BookCopyModel, BookModel, LoanModel
 
 
 def _to_domain_book(model: BookModel) -> Book:
@@ -23,7 +24,6 @@ def _to_domain_book(model: BookModel) -> Book:
         genre=model.genre,
         pages=model.pages,
         max_loan_weeks=model.max_loan_weeks,
-        total_copies=model.total_copies,
         created_at=model.created_at,
         updated_at=model.updated_at,
     )
@@ -58,7 +58,6 @@ class SqlAlchemyBookRepository(BookRepository):
                 genre=book.genre,
                 pages=book.pages,
                 max_loan_weeks=book.max_loan_weeks,
-                total_copies=book.total_copies,
             )
         )
         return book
@@ -118,19 +117,41 @@ class SqlAlchemyBookCopyRepository(BookCopyRepository):
         model.status = book_copy.status.value
         return book_copy
 
+    def count_total_copies(self, book_id: str) -> int:
+        stmt = select(func.count(BookCopyModel.book_copy_id)).where(BookCopyModel.book_id == book_id)
+        return int(self._db.scalar(stmt) or 0)
+
     def count_available_copies(self, book_id: str) -> int:
+        active_loan_exists = (
+            select(LoanModel.loan_id)
+            .where(
+                LoanModel.book_copy_id == BookCopyModel.book_copy_id,
+                LoanModel.status == LoanStatus.IN_PROGRESS.value,
+            )
+            .exists()
+        )
         stmt = select(func.count(BookCopyModel.book_copy_id)).where(
             BookCopyModel.book_id == book_id,
             BookCopyModel.status == BookCopyStatus.AVAILABLE.value,
+            ~active_loan_exists,
         )
         return int(self._db.scalar(stmt) or 0)
 
     def get_first_available_copy_id(self, book_id: str) -> str | None:
+        active_loan_exists = (
+            select(LoanModel.loan_id)
+            .where(
+                LoanModel.book_copy_id == BookCopyModel.book_copy_id,
+                LoanModel.status == LoanStatus.IN_PROGRESS.value,
+            )
+            .exists()
+        )
         stmt = (
             select(BookCopyModel.book_copy_id)
             .where(
                 BookCopyModel.book_id == book_id,
                 BookCopyModel.status == BookCopyStatus.AVAILABLE.value,
+                ~active_loan_exists,
             )
             .order_by(BookCopyModel.book_copy_id)
             .limit(1)

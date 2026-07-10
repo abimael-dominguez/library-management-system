@@ -16,7 +16,7 @@ class Member:
     member_id: str
     first_name: str
     last_name: str
-    email: str
+    email: str | None = None
     address: str | None = None
     phone: str | None = None
     registration_date: date | None = None

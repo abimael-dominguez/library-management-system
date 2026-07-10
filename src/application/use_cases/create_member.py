@@ -22,7 +22,7 @@ class CreateMemberUseCase:
             member_id=str(uuid4()),
             first_name=payload.first_name,
             last_name=payload.last_name,
-            email=str(payload.email),
+            email=str(payload.email) if payload.email else None,
             address=payload.address,
             phone=payload.phone,
             registration_date=date.today(),

@@ -30,4 +30,7 @@ class Loan:
 
     @property
     def is_overdue(self) -> bool:
-        return self.status == LoanStatus.IN_PROGRESS and self.due_date < date.today()
+        return (
+            self.status == LoanStatus.IN_PROGRESS
+            and self.due_date < date.today()
+        )

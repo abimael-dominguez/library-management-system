@@ -112,6 +112,10 @@ def test_book_member_loan_flow(db_session):
         loan = loan_response.json()
         assert loan["status"] == "in_progress"
 
+        book_after_loan_response = client.get(f"/books/{book['book_id']}")
+        assert book_after_loan_response.status_code == 200
+        assert book_after_loan_response.json()["available_copies"] == 1
+
         loans_response = client.get("/loans")
         assert loans_response.status_code == 200
         listed_loan = loans_response.json()["loans"][0]
@@ -134,6 +138,10 @@ def test_book_member_loan_flow(db_session):
         assert return_response.status_code == 200
         assert return_response.json()["status"] == "returned"
         assert return_response.json()["actual_return_date"] == str(date.today())
+
+        book_after_return_response = client.get(f"/books/{book['book_id']}")
+        assert book_after_return_response.status_code == 200
+        assert book_after_return_response.json()["available_copies"] == 2
 
         reloaded_response = client.get(f"/loans/{loan['loan_id']}")
         assert reloaded_response.status_code == 200

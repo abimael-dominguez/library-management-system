@@ -37,7 +37,6 @@ class CreateBookUseCase:
             genre=payload.genre,
             pages=payload.pages,
             max_loan_weeks=payload.max_loan_weeks,
-            total_copies=payload.total_copies,
         )
         try:
             self._book_repo.create_book(book)
@@ -57,6 +56,7 @@ class CreateBookUseCase:
         created = self._book_repo.get_book_by_id(book_id)
         if not created:
             raise DomainError("Book was created but could not be reloaded.")
+        created.total_copies = self._book_copy_repo.count_total_copies(book_id)
         created.available_copies = self._book_copy_repo.count_available_copies(book_id)
         created.first_available_copy_id = self._book_copy_repo.get_first_available_copy_id(book_id)
         return created

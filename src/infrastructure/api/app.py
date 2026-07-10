@@ -33,7 +33,7 @@ def _raise_bad_request(exc: DomainError) -> None:
     raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-def create_app(*, auto_seed: bool = True) -> FastAPI:
+def create_app(*, auto_seed: bool = False) -> FastAPI:
     """Build and return a fully-configured FastAPI application."""
 
     @asynccontextmanager

@@ -24,6 +24,11 @@ def test_member_create_validates_email():
         MemberCreateRequest(first_name="Ana", last_name="Lopez", email="not-an-email")
 
 
+def test_member_create_email_is_optional():
+    payload = MemberCreateRequest(first_name="Ana", last_name="Lopez")
+    assert payload.email is None
+
+
 def test_loan_create_requires_ids():
     with pytest.raises(ValidationError):
         LoanCreateRequest(book_copy_id="", member_id="member-1", loan_date=date.today(), due_date=date.today())

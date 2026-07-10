@@ -1,9 +1,175 @@
 {
-  "books": 111,
-  "copies": 115,
-  "members": 34,
+  "books": 115,
+  "copies": 119,
+  "members": 30,
   "employees": 2,
-  "active_loans": 27,
-  "warnings": 7,
-  "csv_path": "/app/data/library-cbg-clean.csv"
+  "active_loans": 22,
+  "skipped_active_loans": 6,
+  "skipped_loan_history": 7,
+  "warnings": 27,
+  "csv_path": "/app/data/library-cbg-clean.csv",
+  "issues": [
+    {
+      "row": 2,
+      "field": "actual_return_date",
+      "value": null,
+      "message": "Returned loan history has no actual return date; loan history was not imported."
+    },
+    {
+      "row": 18,
+      "field": "loan_date",
+      "value": null,
+      "message": "Active loan skipped because loan_date is missing or invalid."
+    },
+    {
+      "row": 54,
+      "field": "actual_return_date",
+      "value": null,
+      "message": "Returned loan history has no actual return date; loan history was not imported."
+    },
+    {
+      "row": 61,
+      "field": "due_date",
+      "value": null,
+      "message": "Missing or invalid due date; derived from loan_date and max_loan_weeks."
+    },
+    {
+      "row": 72,
+      "field": "due_date",
+      "value": null,
+      "message": "Missing or invalid due date; derived from loan_date and max_loan_weeks."
+    },
+    {
+      "row": 79,
+      "field": "author",
+      "value": null,
+      "message": "Missing author; imported with Unknown Author."
+    },
+    {
+      "row": 81,
+      "field": "member",
+      "value": "03/08/2025",
+      "message": "Active loan skipped because member is missing or invalid."
+    },
+    {
+      "row": 82,
+      "field": "author",
+      "value": null,
+      "message": "Missing author; imported with Unknown Author."
+    },
+    {
+      "row": 85,
+      "field": "actual_return_date",
+      "value": null,
+      "message": "Returned loan history has no actual return date; loan history was not imported."
+    },
+    {
+      "row": 86,
+      "field": "loan_date",
+      "value": null,
+      "message": "Active loan skipped because loan_date is missing or invalid."
+    },
+    {
+      "row": 87,
+      "field": "actual_return_date",
+      "value": null,
+      "message": "Returned loan history has no actual return date; loan history was not imported."
+    },
+    {
+      "row": 90,
+      "field": "author",
+      "value": null,
+      "message": "Missing author; imported with Unknown Author."
+    },
+    {
+      "row": 91,
+      "field": "loan_date",
+      "value": null,
+      "message": "Active loan skipped because loan_date is missing or invalid."
+    },
+    {
+      "row": 93,
+      "field": "due_date",
+      "value": null,
+      "message": "Missing or invalid due date; derived from loan_date and max_loan_weeks."
+    },
+    {
+      "row": 98,
+      "field": "total_copies",
+      "value": null,
+      "message": "Missing total_copies; defaulted to 1."
+    },
+    {
+      "row": 98,
+      "field": "actual_return_date",
+      "value": null,
+      "message": "Returned loan history has no actual return date; loan history was not imported."
+    },
+    {
+      "row": 99,
+      "field": "total_copies",
+      "value": null,
+      "message": "Missing total_copies; defaulted to 1."
+    },
+    {
+      "row": 99,
+      "field": "actual_return_date",
+      "value": null,
+      "message": "Returned loan history has no actual return date; loan history was not imported."
+    },
+    {
+      "row": 100,
+      "field": "loan_date",
+      "value": null,
+      "message": "Active loan skipped because loan_date is missing or invalid."
+    },
+    {
+      "row": 101,
+      "field": "author",
+      "value": null,
+      "message": "Missing author; imported with Unknown Author."
+    },
+    {
+      "row": 101,
+      "field": "due_date",
+      "value": null,
+      "message": "Missing or invalid due date; derived from loan_date and max_loan_weeks."
+    },
+    {
+      "row": 102,
+      "field": "total_copies",
+      "value": null,
+      "message": "Missing total_copies; defaulted to 1."
+    },
+    {
+      "row": 103,
+      "field": "total_copies",
+      "value": null,
+      "message": "Missing total_copies; defaulted to 1."
+    },
+    {
+      "row": 107,
+      "field": "actual_return_date",
+      "value": null,
+      "message": "Returned loan history has no actual return date; loan history was not imported."
+    },
+    {
+      "row": 111,
+      "field": "loan_date",
+      "value": null,
+      "message": "Active loan skipped because loan_date is missing or invalid."
+    },
+    {
+      "row": 114,
+      "field": "due_date",
+      "value": null,
+      "message": "Missing or invalid due date; derived from loan_date and max_loan_weeks."
+    },
+    {
+      "row": 115,
+      "field": "due_date",
+      "value": null,
+      "message": "Missing or invalid due date; derived from loan_date and max_loan_weeks."
+    }
+  ]
 }

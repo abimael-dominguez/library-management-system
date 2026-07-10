@@ -25,6 +25,24 @@ def test_create_member_sets_defaults(db_session):
     assert member.registration_date is not None
 
 
+def test_create_member_allows_missing_email(db_session):
+    uow = SqlAlchemyUnitOfWork(db_session)
+    member_repo = SqlAlchemyMemberRepository(db_session)
+    create_member = CreateMemberUseCase(
+        member_repo=member_repo,
+        unit_of_work=uow,
+    )
+
+    member = create_member.execute(
+        payload=MemberCreateRequest(
+            first_name="Noemi",
+            last_name="Garcia",
+        )
+    )
+
+    assert member.email is None
+
+
 def test_member_autocomplete_uses_full_name(db_session):
     uow = SqlAlchemyUnitOfWork(db_session)
     member_repo = SqlAlchemyMemberRepository(db_session)

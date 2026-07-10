@@ -21,6 +21,10 @@ class BookCopyRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def count_total_copies(self, book_id: str) -> int:
+        raise NotImplementedError
+
+    @abstractmethod
     def count_available_copies(self, book_id: str) -> int:
         raise NotImplementedError
 
