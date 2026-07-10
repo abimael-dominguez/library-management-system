@@ -264,9 +264,14 @@ def choose_available_copy(
     return None
 
 
-def seed_from_csv(db: Session, csv_path: Path, reset: bool = True) -> SeedSummary:
+def seed_from_csv(
+    db: Session,
+    csv_path: Path,
+    reset: bool = True,
+    rebuild_schema: bool = False,
+) -> SeedSummary:
     if reset:
-        reset_library_data(db, rebuild_schema=True)
+        reset_library_data(db, rebuild_schema=rebuild_schema)
 
     summary = SeedSummary()
     summary.csv_path = str(csv_path)
@@ -376,8 +381,8 @@ def seed_from_csv(db: Session, csv_path: Path, reset: bool = True) -> SeedSummar
     return summary
 
 
-def seed_demo_data(db: Session) -> SeedSummary:
-    reset_library_data(db, rebuild_schema=True)
+def seed_demo_data(db: Session, *, rebuild_schema: bool = False) -> SeedSummary:
+    reset_library_data(db, rebuild_schema=rebuild_schema)
     summary = SeedSummary()
     summary.csv_path = "demo"
     member = ensure_member(db, {}, "Ana Gomez", summary)

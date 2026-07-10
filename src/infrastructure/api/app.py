@@ -23,8 +23,8 @@ from ...application.dtos import (
 from ...domain.exceptions import DomainError
 from ..config.container import ServiceContainer
 from ..config.settings import settings
-from ..persistence.database import SessionLocal, get_db, init_db
-from ..persistence.seed import read_seed_summary, seed_demo_data
+from ..persistence.database import get_db, init_db
+from ..persistence.seed import read_seed_summary
 from .serializers import serialize_book, serialize_employee, serialize_loan, serialize_member
 
 
@@ -35,14 +35,13 @@ def _raise_bad_request(exc: DomainError) -> None:
 
 def create_app(*, auto_seed: bool = False) -> FastAPI:
     """Build and return a fully-configured FastAPI application."""
+    if auto_seed:
+        raise RuntimeError("Auto-seeding is disabled. Use scripts/seed_local_db.py explicitly.")
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         if settings.auto_create_db:
             init_db()
-            if auto_seed:
-                with SessionLocal() as db:
-                    seed_demo_data(db)
         yield
 
     app = FastAPI(title=settings.app_name, version="0.3.0", lifespan=lifespan)
@@ -147,7 +146,10 @@ def create_app(*, auto_seed: bool = False) -> FastAPI:
 
     @app.post("/employees", status_code=201)
     def create_employee(payload: EmployeeCreateRequest, db: Session = Depends(get_db)):
-        employee = ServiceContainer(db).create_employee.execute(payload=payload)
+        try:
+            employee = ServiceContainer(db).create_employee.execute(payload=payload)
+        except DomainError as exc:
+            _raise_bad_request(exc)
         return serialize_employee(employee)
 
     # ------------------------------------------------------------------
