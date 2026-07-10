@@ -3,6 +3,7 @@ from __future__ import annotations
 from uuid import uuid4
 
 from ...domain.entities.employee import Employee
+from ...domain.exceptions import DomainError
 from ...domain.interfaces.employee_repository import EmployeeRepository
 from ..dtos.employee_dto import EmployeeCreateRequest
 from ..interfaces.unit_of_work import UnitOfWork
@@ -22,7 +23,12 @@ class CreateEmployeeUseCase:
             last_name=payload.last_name,
             position=payload.position,
         )
-        self._employee_repo.create_employee(employee)
-        self._unit_of_work.commit()
+        try:
+            self._employee_repo.create_employee(employee)
+            self._unit_of_work.commit()
+        except Exception as exc:
+            self._unit_of_work.rollback()
+            raise DomainError("Employee could not be saved.") from exc
+
         created = self._employee_repo.get_employee_by_id(employee.employee_id)
         return created or employee
